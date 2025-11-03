@@ -3,3 +3,9 @@
 target/
 build/
 .gradle/
+
+# Environment variables
+.env
+
+# Claude Code
+.claude

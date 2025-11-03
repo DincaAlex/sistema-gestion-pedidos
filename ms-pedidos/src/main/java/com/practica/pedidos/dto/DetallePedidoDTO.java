@@ -1,0 +1,15 @@
+package com.practica.pedidos.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class DetallePedidoDTO {
+    private Long id;
+    private Long productoId;
+    private Integer cantidad;
+    private Double precioUnitario;
+}
