@@ -3,18 +3,9 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/db_pedidos_dev
+    url: r2dbc:postgresql://localhost:5432/db_pedidos_dev
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:admin}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
 
 ms-productos:
   url: http://localhost:8081

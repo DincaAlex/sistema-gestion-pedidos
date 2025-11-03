@@ -17,44 +17,42 @@ public class ProductoController {
     private final ProductoService productoService;
 
     @GetMapping
-    public Flux<ProductoDTO> listarTodos(@RequestParam(required = false, defaultValue = "false") Boolean soloActivos) {
-        return soloActivos ? productoService.listarActivos() : productoService.listarTodos();
+    public Flux<ProductoDTO> listAll(@RequestParam(required = false, defaultValue = "false") Boolean onlyActive) {
+        return onlyActive ? productoService.getActive() : productoService.getAll();
     }
 
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<ProductoDTO>> buscarPorId(@PathVariable Long id) {
-        return productoService.buscarPorId(id)
-                .map(ResponseEntity::ok);
+    public Mono<ResponseEntity<ProductoDTO>> getById(@PathVariable Long id) {
+        return productoService.getById(id)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public Mono<ResponseEntity<ProductoDTO>> crear(@RequestBody ProductoDTO productoDTO) {
-        return productoService.crear(productoDTO)
-                .map(producto -> ResponseEntity.status(HttpStatus.CREATED).body(producto));
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<ProductoDTO> create(@RequestBody ProductoDTO productoDTO) {
+        return productoService.create(productoDTO);
     }
 
     @PutMapping("/{id}")
-    public Mono<ResponseEntity<ProductoDTO>> actualizar(@PathVariable Long id, @RequestBody ProductoDTO productoDTO) {
-        return productoService.actualizar(id, productoDTO)
-                .map(ResponseEntity::ok);
+    public Mono<ProductoDTO> update(@PathVariable Long id, @RequestBody ProductoDTO productoDTO) {
+        return productoService.update(id, productoDTO);
     }
 
     @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<Void>> eliminar(@PathVariable Long id) {
-        return productoService.eliminar(id)
-                .then(Mono.just(ResponseEntity.noContent().<Void>build()));
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public Mono<Void> delete(@PathVariable Long id) {
+        return productoService.delete(id);
     }
 
     @PutMapping("/{id}/stock")
-    public Mono<ResponseEntity<Void>> actualizarStock(
-            @PathVariable Long id,
-            @RequestParam Integer cantidad) {
-        return productoService.actualizarStock(id, cantidad)
-                .then(Mono.just(ResponseEntity.ok().<Void>build()));
+    @ResponseStatus(HttpStatus.OK)
+    public Mono<Void> updateStock(@PathVariable Long id, @RequestParam Integer cantidad) {
+        return productoService.updateStock(id, cantidad);
     }
 
-    @GetMapping("/bajo-stock")
-    public Flux<ProductoDTO> obtenerProductosBajoStock(@RequestParam(defaultValue = "10") Integer minimo) {
-        return productoService.obtenerProductosBajoStock(minimo);
+    @GetMapping("/low-stock")
+    public Flux<ProductoDTO> getLowStock(@RequestParam(defaultValue = "10") Integer minimo) {
+        return productoService.getProductsLowStock(minimo);
     }
 }

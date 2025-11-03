@@ -1,43 +1,28 @@
 package com.practica.productos.entity;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "productos")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Table("productos")
 public class Producto {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 200)
     private String nombre;
-
-    @Column(length = 500)
     private String descripcion;
-
-    @Column(nullable = false)
     private Double precio;
-
-    @Column(nullable = false)
     private Integer stock;
+    private Boolean activo;
 
-    @Column(nullable = false)
-    private Boolean activo = true;
-
-    @Column(name = "fecha_creacion", nullable = false, updatable = false)
+    @Column("fecha_creacion")
     private LocalDateTime fechaCreacion;
-
-    @PrePersist
-    protected void onCreate() {
-        fechaCreacion = LocalDateTime.now();
-    }
 }

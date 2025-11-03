@@ -7,10 +7,8 @@ import com.practica.productos.exception.ResourceNotFoundException;
 import com.practica.productos.repository.ProductoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
@@ -18,98 +16,89 @@ public class ProductoService {
 
     private final ProductoRepository productoRepository;
 
-    public Flux<ProductoDTO> listarTodos() {
-        return Flux.defer(() -> Flux.fromIterable(productoRepository.findAll()))
-                .subscribeOn(Schedulers.boundedElastic())
+    public Flux<ProductoDTO> getAll() {
+        return productoRepository.findAll()
                 .map(this::convertToDTO);
     }
 
-    public Flux<ProductoDTO> listarActivos() {
-        return Flux.defer(() -> Flux.fromIterable(productoRepository.findByActivoTrue()))
-                .subscribeOn(Schedulers.boundedElastic())
+    public Flux<ProductoDTO> getActive() {
+        return productoRepository.findByActivoTrue()
                 .map(this::convertToDTO);
     }
 
-    public Mono<ProductoDTO> buscarPorId(Long id) {
-        return Mono.fromCallable(() -> productoRepository.findById(id)
-                        .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con id: " + id)))
-                .subscribeOn(Schedulers.boundedElastic())
+    public Mono<ProductoDTO> getById(Long id) {
+        return productoRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Product not found with id: " + id)))
                 .map(this::convertToDTO);
     }
 
-    @Transactional
-    public Mono<ProductoDTO> crear(ProductoDTO productoDTO) {
-        return Mono.fromCallable(() -> {
-                    validarProducto(productoDTO);
-                    Producto producto = convertToEntity(productoDTO);
-                    return productoRepository.save(producto);
-                })
-                .subscribeOn(Schedulers.boundedElastic())
+    public Mono<ProductoDTO> create(ProductoDTO productoDTO) {
+        return Mono.just(productoDTO)
+                .doOnNext(this::validateProduct)
+                .map(this::convertToEntity)
+                .flatMap(productoRepository::save)
                 .map(this::convertToDTO);
     }
 
-    @Transactional
-    public Mono<ProductoDTO> actualizar(Long id, ProductoDTO productoDTO) {
-        return Mono.fromCallable(() -> {
-                    Producto productoExistente = productoRepository.findById(id)
-                            .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con id: " + id));
-
-                    validarProducto(productoDTO);
-                    productoExistente.setNombre(productoDTO.getNombre());
-                    productoExistente.setDescripcion(productoDTO.getDescripcion());
-                    productoExistente.setPrecio(productoDTO.getPrecio());
-                    productoExistente.setStock(productoDTO.getStock());
-                    productoExistente.setActivo(productoDTO.getActivo());
-
-                    return productoRepository.save(productoExistente);
-                })
-                .subscribeOn(Schedulers.boundedElastic())
+    public Mono<ProductoDTO> update(Long id, ProductoDTO productoDTO) {
+        return Mono.just(productoDTO)
+                .doOnNext(this::validateProduct)
+                .flatMap(dto -> productoRepository.findById(id)
+                        .switchIfEmpty(Mono.error(new ResourceNotFoundException("Product not found with id: " + id)))
+                        .flatMap(existing -> {
+                            existing.setNombre(dto.getNombre());
+                            existing.setDescripcion(dto.getDescripcion());
+                            existing.setPrecio(dto.getPrecio());
+                            existing.setStock(dto.getStock());
+                            existing.setActivo(dto.getActivo());
+                            return productoRepository.save(existing);
+                        }))
                 .map(this::convertToDTO);
     }
 
-    @Transactional
-    public Mono<Void> eliminar(Long id) {
-        return Mono.fromRunnable(() -> {
-                    if (!productoRepository.existsById(id)) {
-                        throw new ResourceNotFoundException("Producto no encontrado con id: " + id);
+    public Mono<Void> delete(Long id) {
+        return productoRepository.existsById(id)
+                .flatMap(exists -> {
+                    if (!exists) {
+                        return Mono.error(new ResourceNotFoundException("Product not found with id: " + id));
                     }
-                    productoRepository.deleteById(id);
-                })
-                .subscribeOn(Schedulers.boundedElastic())
+                    return productoRepository.deleteById(id);
+                });
+    }
+
+    public Mono<Void> updateStock(Long id, Integer cantidad) {
+        return Mono.just(cantidad)
+                .filter(cant -> cant > 0)
+                .switchIfEmpty(Mono.error(new BadRequestException("Amount must be greater than zero")))
+                .flatMap(cant -> productoRepository.findById(id)
+                        .switchIfEmpty(Mono.error(new ResourceNotFoundException("Product not found with id: " + id)))
+                        .filter(producto -> producto.getStock() >= cant)
+                        .switchIfEmpty(Mono.error(new BadRequestException("Insufficient stock")))
+                        .flatMap(producto -> {
+                            producto.setStock(producto.getStock() - cant);
+                            return productoRepository.save(producto);
+                        }))
                 .then();
     }
 
-    @Transactional
-    public Mono<Void> actualizarStock(Long id, Integer cantidad) {
-        return Mono.fromRunnable(() -> {
-                    Producto producto = productoRepository.findById(id)
-                            .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con id: " + id));
-
-                    if (producto.getStock() < cantidad) {
-                        throw new BadRequestException("Stock insuficiente");
-                    }
-
-                    productoRepository.actualizarStock(id, cantidad);
-                })
-                .subscribeOn(Schedulers.boundedElastic())
-                .then();
-    }
-
-    public Flux<ProductoDTO> obtenerProductosBajoStock(Integer minimo) {
-        return Flux.defer(() -> Flux.fromIterable(productoRepository.obtenerProductosBajoStock(minimo)))
-                .subscribeOn(Schedulers.boundedElastic())
+    public Flux<ProductoDTO> getProductsLowStock(Integer minimo) {
+        if (minimo == null) {
+            minimo = 10;
+        }
+        // assuming repository has a reactive method like findByStockLessThanEqual
+        return productoRepository.findByStockLessThanEqual(minimo)
                 .map(this::convertToDTO);
     }
 
-    private void validarProducto(ProductoDTO productoDTO) {
+    private void validateProduct(ProductoDTO productoDTO) {
         if (productoDTO.getNombre() == null || productoDTO.getNombre().trim().isEmpty()) {
-            throw new BadRequestException("El nombre del producto es obligatorio");
+            throw new BadRequestException("Product name is required");
         }
         if (productoDTO.getPrecio() == null || productoDTO.getPrecio() <= 0) {
-            throw new BadRequestException("El precio debe ser mayor a 0");
+            throw new BadRequestException("Price must be greater than 0");
         }
         if (productoDTO.getStock() == null || productoDTO.getStock() < 0) {
-            throw new BadRequestException("El stock no puede ser negativo");
+            throw new BadRequestException("Stock cannot be negative");
         }
     }
 
@@ -121,8 +110,7 @@ public class ProductoService {
                 producto.getPrecio(),
                 producto.getStock(),
                 producto.getActivo(),
-                producto.getFechaCreacion()
-        );
+                producto.getFechaCreacion());
     }
 
     private Producto convertToEntity(ProductoDTO dto) {

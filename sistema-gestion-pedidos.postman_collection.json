@@ -1,0 +1,58 @@
+{
+  "info": {
+    "name": "Sistema Gestión Pedidos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "MS-PRODUCTOS",
+      "item": [
+        {
+          "name": "List All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:8081/api/productos"
+          }
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Test Product\",\n  \"descripcion\": \"Test description\",\n  \"precio\": 99.99,\n  \"stock\": 50,\n  \"activo\": true\n}"
+            },
+            "url": "http://localhost:8081/api/productos"
+          }
+        }
+      ]
+    },
+    {
+      "name": "MS-PEDIDOS",
+      "item": [
+        {
+          "name": "List All Orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "http://localhost:8082/api/pedidos"
+          }
+        },
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente\": \"Test Client\",\n  \"detalles\": [\n    {\n      \"productoId\": 2,\n      \"cantidad\": 2\n    }\n  ]\n}"
+            },
+            "url": "http://localhost:8082/api/pedidos"
+          }
+        }
+      ]
+    }
+  ]
+}
