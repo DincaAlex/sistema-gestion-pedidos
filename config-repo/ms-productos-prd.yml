@@ -6,6 +6,18 @@ spring:
     url: r2dbc:postgresql://localhost:5432/db_productos_prd
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:admin}
+    pool:
+      initial-size: 15
+      max-size: 30
+      max-idle-time: 30m
+      validation-query: SELECT 1
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: false
 
 logging:
   level:
