@@ -77,8 +77,9 @@ public class ProductoService {
                             if (nuevoStock < 0) {
                                 return Mono.error(new BadRequestException("Insufficient stock. Current: " + producto.getStock() + ", requested: " + Math.abs(cant)));
                             }
-                            producto.setStock(nuevoStock);
-                            return productoRepository.save(producto);
+                            // Usar procedimiento almacenado para actualizar el stock
+                            // Nota: el procedimiento resta la cantidad, por eso enviamos -cant para sumar
+                            return productoRepository.actualizarStockConProcedimiento(id, -cant);
                         }))
                 .then();
     }
@@ -87,8 +88,8 @@ public class ProductoService {
         if (minimo == null) {
             minimo = 10;
         }
-        // assuming repository has a reactive method like findByStockLessThanEqual
-        return productoRepository.findByStockLessThanEqual(minimo)
+        // Usar procedimiento almacenado para obtener productos con stock bajo
+        return productoRepository.obtenerProductosBajoStockConProcedimiento(minimo)
                 .map(this::convertToDTO);
     }
 
