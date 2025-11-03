@@ -5,7 +5,6 @@ import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.servers.Server;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,13 +13,10 @@ import java.util.List;
 @Configuration
 public class OpenAPIConfig {
 
-    @Value("${server.port:8082}")
-    private String serverPort;
-
     @Bean
     public OpenAPI pedidosOpenAPI() {
         Server devServer = new Server();
-        devServer.setUrl("http://localhost:" + serverPort);
+        devServer.setUrl("http://localhost:8082");
         devServer.setDescription("Development Server");
 
         Contact contact = new Contact();
@@ -34,7 +30,8 @@ public class OpenAPIConfig {
         Info info = new Info()
                 .title("Pedidos API")
                 .version("1.0.0")
-                .description("API REST reactiva para la gestión de pedidos")
+                .description("API REST reactiva para la gestión de pedidos. " +
+                        "Permite crear, consultar, actualizar y eliminar pedidos.")
                 .contact(contact)
                 .license(license);
 
