@@ -1,55 +1,358 @@
 {
   "info": {
     "name": "Sistema Gestión Pedidos",
+    "description": "Colección completa de APIs para el sistema de gestión de pedidos y productos",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
       "name": "MS-PRODUCTOS",
+      "description": "Microservicio de gestión de productos",
       "item": [
         {
-          "name": "List All Products",
+          "name": "Listar Todos los Productos",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:8081/api/productos"
+            "url": {
+              "raw": "http://localhost:8081/api/productos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "productos"]
+            }
           }
         },
         {
-          "name": "Create Product",
+          "name": "Listar Solo Productos Activos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/productos?onlyActive=true",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "productos"],
+              "query": [
+                {
+                  "key": "onlyActive",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Producto por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/productos/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "productos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Crear Producto",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Test Product\",\n  \"descripcion\": \"Test description\",\n  \"precio\": 99.99,\n  \"stock\": 50,\n  \"activo\": true\n}"
+              "raw": "{\n  \"nombre\": \"Laptop HP\",\n  \"descripcion\": \"Laptop HP 15.6 pulgadas, Intel Core i5, 8GB RAM, 256GB SSD\",\n  \"precio\": 599.99,\n  \"stock\": 25,\n  \"activo\": true\n}"
             },
-            "url": "http://localhost:8081/api/productos"
+            "url": {
+              "raw": "http://localhost:8081/api/productos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "productos"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Producto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Laptop HP (Actualizado)\",\n  \"descripcion\": \"Laptop HP 15.6 pulgadas, Intel Core i7, 16GB RAM, 512GB SSD\",\n  \"precio\": 799.99,\n  \"stock\": 30,\n  \"activo\": true\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8081/api/productos/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "productos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Producto",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/productos/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "productos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Stock (Incrementar)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/productos/1/stock?cantidad=10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "productos", "1", "stock"],
+              "query": [
+                {
+                  "key": "cantidad",
+                  "value": "10",
+                  "description": "Cantidad positiva para incrementar"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Stock (Decrementar)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/productos/1/stock?cantidad=-5",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "productos", "1", "stock"],
+              "query": [
+                {
+                  "key": "cantidad",
+                  "value": "-5",
+                  "description": "Cantidad negativa para decrementar"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Productos con Stock Bajo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/api/productos/low-stock?minimo=10",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["api", "productos", "low-stock"],
+              "query": [
+                {
+                  "key": "minimo",
+                  "value": "10",
+                  "description": "Stock mínimo para filtrar"
+                }
+              ]
+            }
           }
         }
       ]
     },
     {
       "name": "MS-PEDIDOS",
+      "description": "Microservicio de gestión de pedidos",
       "item": [
         {
-          "name": "List All Orders",
+          "name": "Listar Todos los Pedidos",
           "request": {
             "method": "GET",
             "header": [],
-            "url": "http://localhost:8082/api/pedidos"
+            "url": {
+              "raw": "http://localhost:8082/api/pedidos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8082",
+              "path": ["api", "pedidos"]
+            }
           }
         },
         {
-          "name": "Create Order",
+          "name": "Obtener Pedido por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8082/api/pedidos/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8082",
+              "path": ["api", "pedidos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Crear Pedido",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cliente\": \"Test Client\",\n  \"detalles\": [\n    {\n      \"productoId\": 2,\n      \"cantidad\": 2\n    }\n  ]\n}"
+              "raw": "{\n  \"cliente\": \"Juan Pérez\",\n  \"detalles\": [\n    {\n      \"productoId\": 1,\n      \"cantidad\": 2\n    },\n    {\n      \"productoId\": 2,\n      \"cantidad\": 1\n    }\n  ]\n}"
             },
-            "url": "http://localhost:8082/api/pedidos"
+            "url": {
+              "raw": "http://localhost:8082/api/pedidos",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8082",
+              "path": ["api", "pedidos"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Estado a PROCESADO",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8082/api/pedidos/1/status?estado=PROCESADO",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8082",
+              "path": ["api", "pedidos", "1", "status"],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "PROCESADO",
+                  "description": "Estados válidos: PENDIENTE, PROCESADO, CANCELADO"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Estado a CANCELADO",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8082/api/pedidos/1/status?estado=CANCELADO",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8082",
+              "path": ["api", "pedidos", "1", "status"],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "CANCELADO",
+                  "description": "Estados válidos: PENDIENTE, PROCESADO, CANCELADO"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Pedido",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8082/api/pedidos/1",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8082",
+              "path": ["api", "pedidos", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "SWAGGER & DOCS",
+      "description": "Enlaces a documentación Swagger y OpenAPI",
+      "item": [
+        {
+          "name": "Swagger UI - Productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/swagger-ui.html",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["swagger-ui.html"]
+            }
+          }
+        },
+        {
+          "name": "Swagger UI - Pedidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8082/swagger-ui.html",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8082",
+              "path": ["swagger-ui.html"]
+            }
+          }
+        },
+        {
+          "name": "OpenAPI JSON - Productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8081/v3/api-docs",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8081",
+              "path": ["v3", "api-docs"]
+            }
+          }
+        },
+        {
+          "name": "OpenAPI JSON - Pedidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8082/v3/api-docs",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8082",
+              "path": ["v3", "api-docs"]
+            }
           }
         }
       ]
