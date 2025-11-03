@@ -7,5 +7,6 @@ build/
 # Environment variables
 .env
 
-# Claude Code
+# IDE
 .claude
+.vscode
