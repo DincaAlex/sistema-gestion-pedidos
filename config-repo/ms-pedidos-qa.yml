@@ -1,0 +1,24 @@
+server:
+  port: 8092
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/db_pedidos_qa
+    username: postgres
+    password: admin
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+ms-productos:
+  url: http://localhost:8091
+
+logging:
+  level:
+    root: INFO
+    com.practica.pedidos: INFO
