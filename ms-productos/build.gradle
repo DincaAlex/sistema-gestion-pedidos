@@ -33,7 +33,6 @@ dependencies {
 	
 	// Spring Cloud
 	implementation 'org.springframework.cloud:spring-cloud-starter-config'
-	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 	
 	// Database
 	implementation 'org.postgresql:postgresql'
