@@ -22,9 +22,9 @@ public class ProductoClient {
         return webClient.get()
                 .uri("/api/productos/{id}", id)
                 .retrieve()
-                .onStatus(HttpStatus.NOT_FOUND::equals,
+                .onStatus(status -> status.value() == HttpStatus.NOT_FOUND.value(),
                         response -> Mono.error(new RuntimeException("Producto no encontrado con id: " + id)))
-                .onStatus(HttpStatus::is5xxServerError,
+                .onStatus(status -> status.is5xxServerError(),
                         response -> Mono.error(new RuntimeException("Error del servidor al obtener producto: " + id)))
                 .bodyToMono(ProductoDTO.class)
                 .timeout(Duration.ofSeconds(5))
@@ -43,11 +43,11 @@ public class ProductoClient {
                         .queryParam("cantidad", cantidad)
                         .build(id))
                 .retrieve()
-                .onStatus(HttpStatus.NOT_FOUND::equals,
+                .onStatus(status -> status.value() == HttpStatus.NOT_FOUND.value(),
                         response -> Mono.error(new RuntimeException("Producto no encontrado con id: " + id)))
-                .onStatus(HttpStatus.BAD_REQUEST::equals,
+                .onStatus(status -> status.value() == HttpStatus.BAD_REQUEST.value(),
                         response -> Mono.error(new RuntimeException("Stock insuficiente para producto: " + id)))
-                .onStatus(HttpStatus::is5xxServerError,
+                .onStatus(status -> status.is5xxServerError(),
                         response -> Mono.error(new RuntimeException("Error del servidor al actualizar stock: " + id)))
                 .bodyToMono(Void.class)
                 .timeout(Duration.ofSeconds(5))
