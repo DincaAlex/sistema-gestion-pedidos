@@ -1,13 +1,11 @@
 package com.practica.pedidos.repository;
 
 import com.practica.pedidos.entity.Pedido;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import reactor.core.publisher.Flux;
 
-import java.util.List;
+public interface PedidoRepository extends R2dbcRepository<Pedido, Long> {
+    Flux<Pedido> findByCliente(String cliente);
 
-@Repository
-public interface PedidoRepository extends JpaRepository<Pedido, Long> {
-    List<Pedido> findByCliente(String cliente);
-    List<Pedido> findByEstado(String estado);
+    Flux<Pedido> findByEstado(String estado);
 }

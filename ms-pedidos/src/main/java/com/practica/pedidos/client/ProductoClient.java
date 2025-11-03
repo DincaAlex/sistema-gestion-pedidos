@@ -1,6 +1,7 @@
 package com.practica.pedidos.client;
 
 import com.practica.pedidos.dto.ProductoDTO;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -9,8 +10,9 @@ import reactor.core.publisher.Mono;
 public class ProductoClient {
     private final WebClient webClient;
 
-    public ProductoClient(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.baseUrl("${ms-productos.url}").build();
+    public ProductoClient(WebClient.Builder webClientBuilder,
+                          @Value("${ms-productos.url:http://localhost:8081}") String productosUrl) {
+        this.webClient = webClientBuilder.baseUrl(productosUrl).build();
     }
 
     public Mono<ProductoDTO> obtenerProducto(Long id) {

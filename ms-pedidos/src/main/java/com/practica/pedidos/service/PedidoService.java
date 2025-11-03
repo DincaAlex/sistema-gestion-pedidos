@@ -3,130 +3,145 @@ package com.practica.pedidos.service;
 import com.practica.pedidos.client.ProductoClient;
 import com.practica.pedidos.dto.DetallePedidoDTO;
 import com.practica.pedidos.dto.PedidoDTO;
-import com.practica.pedidos.dto.ProductoDTO;
 import com.practica.pedidos.entity.DetallePedido;
 import com.practica.pedidos.entity.Pedido;
 import com.practica.pedidos.exception.BadRequestException;
-import com.practica.pedidos.exception.ResourceNotFoundException;
+import com.practica.pedidos.repository.DetallePedidoRepository;
 import com.practica.pedidos.repository.PedidoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class PedidoService {
 
     private final PedidoRepository pedidoRepository;
+    private final DetallePedidoRepository detallePedidoRepository;
     private final ProductoClient productoClient;
 
     public Flux<PedidoDTO> listarTodos() {
-        return Flux.defer(() -> Flux.fromIterable(pedidoRepository.findAll()))
-                .subscribeOn(Schedulers.boundedElastic())
-                .map(this::convertToDTO);
+        return pedidoRepository.findAll()
+                .flatMap(this::enrichPedidoWithDetalles);
     }
 
     public Mono<PedidoDTO> buscarPorId(Long id) {
-        return Mono.fromCallable(() -> pedidoRepository.findById(id)
-                        .orElseThrow(() -> new ResourceNotFoundException("Pedido no encontrado con id: " + id)))
-                .subscribeOn(Schedulers.boundedElastic())
-                .map(this::convertToDTO);
+        return pedidoRepository.findById(id)
+                .flatMap(this::enrichPedidoWithDetalles);
     }
 
     @Transactional
     public Mono<PedidoDTO> crear(PedidoDTO pedidoDTO) {
-        return Mono.fromCallable(() -> {
-                    validarPedido(pedidoDTO);
-
-                    // Validar stock y obtener precios
-                    for (DetallePedidoDTO detalle : pedidoDTO.getDetalles()) {
-                        ProductoDTO producto = productoClient.obtenerProducto(detalle.getProductoId());
-
-                        if (producto == null) {
-                            throw new BadRequestException("Producto no encontrado: " + detalle.getProductoId());
-                        }
-
-                        if (!producto.getActivo()) {
-                            throw new BadRequestException("Producto inactivo: " + producto.getNombre());
-                        }
-
-                        if (producto.getStock() < detalle.getCantidad()) {
-                            throw new BadRequestException("Stock insuficiente para: " + producto.getNombre());
-                        }
-
-                        detalle.setPrecioUnitario(producto.getPrecio());
-                    }
-
-                    // Calcular total
-                    double total = pedidoDTO.getDetalles().stream()
-                            .mapToDouble(d -> d.getCantidad() * d.getPrecioUnitario())
-                            .sum();
-
-                    Pedido pedido = convertToEntity(pedidoDTO);
-                    pedido.setTotal(total);
+        return validarPedido(pedidoDTO)
+                .then(validarProductos(pedidoDTO))
+                .flatMap(validatedDTO -> {
+                    Pedido pedido = new Pedido();
+                    pedido.setCliente(validatedDTO.getCliente());
+                    pedido.setFecha(LocalDateTime.now());
                     pedido.setEstado("PENDIENTE");
+                    pedido.setTotal(calcularTotal(validatedDTO.getDetalles()));
 
-                    Pedido pedidoGuardado = pedidoRepository.save(pedido);
-
-                    // Actualizar stock en ms-productos
-                    for (DetallePedidoDTO detalle : pedidoDTO.getDetalles()) {
-                        productoClient.actualizarStock(detalle.getProductoId(), detalle.getCantidad());
-                    }
-
-                    return pedidoGuardado;
-                })
-                .subscribeOn(Schedulers.boundedElastic())
-                .map(this::convertToDTO);
+                    return pedidoRepository.save(pedido)
+                            .flatMap(savedPedido -> guardarDetalles(savedPedido, validatedDTO.getDetalles())
+                                    .then(actualizarStockProductos(validatedDTO.getDetalles()))
+                                    .then(enrichPedidoWithDetalles(savedPedido)));
+                });
     }
 
     @Transactional
     public Mono<PedidoDTO> actualizarEstado(Long id, String nuevoEstado) {
-        return Mono.fromCallable(() -> {
-                    Pedido pedido = pedidoRepository.findById(id)
-                            .orElseThrow(() -> new ResourceNotFoundException("Pedido no encontrado con id: " + id));
+        if (!List.of("PENDIENTE", "PROCESADO", "CANCELADO").contains(nuevoEstado)) {
+            return Mono.error(new BadRequestException("Estado inválido"));
+        }
 
-                    if (!List.of("PENDIENTE", "PROCESADO", "CANCELADO").contains(nuevoEstado)) {
-                        throw new BadRequestException("Estado inválido");
-                    }
-
+        return pedidoRepository.findById(id)
+                .switchIfEmpty(Mono.error(new BadRequestException("Pedido no encontrado")))
+                .flatMap(pedido -> {
                     pedido.setEstado(nuevoEstado);
                     return pedidoRepository.save(pedido);
                 })
-                .subscribeOn(Schedulers.boundedElastic())
-                .map(this::convertToDTO);
+                .flatMap(this::enrichPedidoWithDetalles);
     }
 
     @Transactional
     public Mono<Void> eliminar(Long id) {
-        return Mono.fromRunnable(() -> {
-                    if (!pedidoRepository.existsById(id)) {
-                        throw new ResourceNotFoundException("Pedido no encontrado con id: " + id);
-                    }
-                    pedidoRepository.deleteById(id);
+        return pedidoRepository.findById(id)
+                .switchIfEmpty(Mono.error(new BadRequestException("Pedido no encontrado")))
+                .flatMap(pedido -> detallePedidoRepository.deleteAll(pedido.getDetalles())
+                        .then(pedidoRepository.delete(pedido)));
+    }
+
+    private Mono<PedidoDTO> enrichPedidoWithDetalles(Pedido pedido) {
+        return detallePedidoRepository.findByPedidoId(pedido.getId())
+                .collectList()
+                .map(detalles -> convertToDTO(pedido, detalles));
+    }
+
+    private Mono<PedidoDTO> validarPedido(PedidoDTO pedidoDTO) {
+        if (pedidoDTO.getCliente() == null || pedidoDTO.getCliente().trim().isEmpty()) {
+            return Mono.error(new BadRequestException("El cliente es obligatorio"));
+        }
+        if (pedidoDTO.getDetalles() == null || pedidoDTO.getDetalles().isEmpty()) {
+            return Mono.error(new BadRequestException("El pedido debe tener al menos un producto"));
+        }
+        return Mono.just(pedidoDTO);
+    }
+
+    private Mono<PedidoDTO> validarProductos(PedidoDTO pedidoDTO) {
+        return Flux.fromIterable(pedidoDTO.getDetalles())
+                .flatMap(detalle -> productoClient.obtenerProducto(detalle.getProductoId())
+                        .switchIfEmpty(Mono
+                                .error(new BadRequestException("Producto no encontrado: " + detalle.getProductoId())))
+                        .filter(producto -> producto.getActivo() && producto.getStock() >= detalle.getCantidad())
+                        .switchIfEmpty(Mono.error(new BadRequestException("Producto inactivo o stock insuficiente")))
+                        .map(producto -> {
+                            detalle.setPrecioUnitario(producto.getPrecio());
+                            return detalle;
+                        }))
+                .collectList()
+                .map(detalles -> {
+                    pedidoDTO.setDetalles(detalles);
+                    return pedidoDTO;
+                });
+    }
+
+    private Mono<Void> guardarDetalles(Pedido pedido, List<DetallePedidoDTO> detallesDTO) {
+        return Flux.fromIterable(detallesDTO)
+                .map(detalleDTO -> {
+                    DetallePedido detalle = new DetallePedido();
+                    detalle.setPedidoId(pedido.getId());
+                    detalle.setProductoId(detalleDTO.getProductoId());
+                    detalle.setCantidad(detalleDTO.getCantidad());
+                    detalle.setPrecioUnitario(detalleDTO.getPrecioUnitario());
+                    return detalle;
                 })
-                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(detallePedidoRepository::save)
                 .then();
     }
 
-    private void validarPedido(PedidoDTO pedidoDTO) {
-        if (pedidoDTO.getCliente() == null || pedidoDTO.getCliente().trim().isEmpty()) {
-            throw new BadRequestException("El cliente es obligatorio");
-        }
-        if (pedidoDTO.getDetalles() == null || pedidoDTO.getDetalles().isEmpty()) {
-            throw new BadRequestException("El pedido debe tener al menos un producto");
-        }
+    private Mono<Void> actualizarStockProductos(List<DetallePedidoDTO> detalles) {
+        return Flux.fromIterable(detalles)
+                .flatMap(detalle -> productoClient.actualizarStock(
+                        detalle.getProductoId(),
+                        -detalle.getCantidad()))
+                .then();
     }
 
-    private PedidoDTO convertToDTO(Pedido pedido) {
-        List<DetallePedidoDTO> detallesDTO = pedido.getDetalles().stream()
+    private double calcularTotal(List<DetallePedidoDTO> detalles) {
+        return detalles.stream()
+                .mapToDouble(d -> d.getCantidad() * d.getPrecioUnitario())
+                .sum();
+    }
+
+    private PedidoDTO convertToDTO(Pedido pedido, List<DetallePedido> detalles) {
+        List<DetallePedidoDTO> detallesDTO = detalles.stream()
                 .map(d -> new DetallePedidoDTO(d.getId(), d.getProductoId(), d.getCantidad(), d.getPrecioUnitario()))
-                .collect(Collectors.toList());
+                .toList();
 
         return new PedidoDTO(
                 pedido.getId(),
@@ -134,22 +149,6 @@ public class PedidoService {
                 pedido.getFecha(),
                 pedido.getTotal(),
                 pedido.getEstado(),
-                detallesDTO
-        );
-    }
-
-    private Pedido convertToEntity(PedidoDTO dto) {
-        Pedido pedido = new Pedido();
-        pedido.setCliente(dto.getCliente());
-
-        dto.getDetalles().forEach(detalleDTO -> {
-            DetallePedido detalle = new DetallePedido();
-            detalle.setProductoId(detalleDTO.getProductoId());
-            detalle.setCantidad(detalleDTO.getCantidad());
-            detalle.setPrecioUnitario(detalleDTO.getPrecioUnitario());
-            pedido.addDetalle(detalle);
-        });
-
-        return pedido;
+                detallesDTO);
     }
 }

@@ -1,9 +1,9 @@
 package com.practica.pedidos.repository;
 
 import com.practica.pedidos.entity.DetallePedido;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import reactor.core.publisher.Flux;
 
-@Repository
-public interface DetallePedidoRepository extends JpaRepository<DetallePedido, Long> {
+public interface DetallePedidoRepository extends R2dbcRepository<DetallePedido, Long> {
+    Flux<DetallePedido> findByPedidoId(Long pedidoId);
 }

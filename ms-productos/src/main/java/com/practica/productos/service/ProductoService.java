@@ -68,14 +68,16 @@ public class ProductoService {
 
     public Mono<Void> updateStock(Long id, Integer cantidad) {
         return Mono.just(cantidad)
-                .filter(cant -> cant > 0)
-                .switchIfEmpty(Mono.error(new BadRequestException("Amount must be greater than zero")))
+                .filter(cant -> cant != 0)
+                .switchIfEmpty(Mono.error(new BadRequestException("Amount cannot be zero")))
                 .flatMap(cant -> productoRepository.findById(id)
                         .switchIfEmpty(Mono.error(new ResourceNotFoundException("Product not found with id: " + id)))
-                        .filter(producto -> producto.getStock() >= cant)
-                        .switchIfEmpty(Mono.error(new BadRequestException("Insufficient stock")))
                         .flatMap(producto -> {
-                            producto.setStock(producto.getStock() - cant);
+                            int nuevoStock = producto.getStock() + cant;
+                            if (nuevoStock < 0) {
+                                return Mono.error(new BadRequestException("Insufficient stock. Current: " + producto.getStock() + ", requested: " + Math.abs(cant)));
+                            }
+                            producto.setStock(nuevoStock);
                             return productoRepository.save(producto);
                         }))
                 .then();

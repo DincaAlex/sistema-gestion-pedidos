@@ -1,31 +1,20 @@
 package com.practica.pedidos.entity;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Table;
 
-@Entity
-@Table(name = "detalle_pedidos")
+@Table("detalle_pedidos")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class DetallePedido {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pedido_id", nullable = false)
-    private Pedido pedido;
-
-    @Column(name = "producto_id", nullable = false)
+    private Long pedidoId;
     private Long productoId;
-
-    @Column(nullable = false)
     private Integer cantidad;
-
-    @Column(name = "precio_unitario", nullable = false)
     private Double precioUnitario;
 }

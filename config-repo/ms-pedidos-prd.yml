@@ -6,6 +6,11 @@ spring:
     url: r2dbc:postgresql://localhost:5432/db_pedidos_prd
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:admin}
+    pool:
+      initial-size: 15
+      max-size: 30
+      max-idle-time: 30m
+      validation-query: SELECT 1
 
 ms-productos:
   url: http://localhost:8101

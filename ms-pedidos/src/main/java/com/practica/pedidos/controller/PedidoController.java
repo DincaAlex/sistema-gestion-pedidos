@@ -17,24 +17,24 @@ public class PedidoController {
     private final PedidoService pedidoService;
 
     @GetMapping
-    public Flux<PedidoDTO> listarTodos() {
+    public Flux<PedidoDTO> getAll() {
         return pedidoService.listarTodos();
     }
 
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<PedidoDTO>> buscarPorId(@PathVariable Long id) {
+    public Mono<ResponseEntity<PedidoDTO>> getById(@PathVariable Long id) {
         return pedidoService.buscarPorId(id)
                 .map(ResponseEntity::ok);
     }
 
     @PostMapping
-    public Mono<ResponseEntity<PedidoDTO>> crear(@RequestBody PedidoDTO pedidoDTO) {
+    public Mono<ResponseEntity<PedidoDTO>> create(@RequestBody PedidoDTO pedidoDTO) {
         return pedidoService.crear(pedidoDTO)
                 .map(pedido -> ResponseEntity.status(HttpStatus.CREATED).body(pedido));
     }
 
-    @PutMapping("/{id}/estado")
-    public Mono<ResponseEntity<PedidoDTO>> actualizarEstado(
+    @PutMapping("/{id}/status")
+    public Mono<ResponseEntity<PedidoDTO>> updateStatus(
             @PathVariable Long id,
             @RequestParam String estado) {
         return pedidoService.actualizarEstado(id, estado)
@@ -42,7 +42,7 @@ public class PedidoController {
     }
 
     @DeleteMapping("/{id}")
-    public Mono<ResponseEntity<Void>> eliminar(@PathVariable Long id) {
+    public Mono<ResponseEntity<Void>> delete(@PathVariable Long id) {
         return pedidoService.eliminar(id)
                 .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
