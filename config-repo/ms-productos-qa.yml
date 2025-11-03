@@ -2,8 +2,8 @@ server:
   port: 8091
 
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/db_productos_qa
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/db_productos_qa
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:admin}
 

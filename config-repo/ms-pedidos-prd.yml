@@ -2,7 +2,7 @@ server:
   port: 8102
 
 spring:
-  datasource:
+  r2dbc:
     url: r2dbc:postgresql://localhost:5432/db_pedidos_prd
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:admin}
