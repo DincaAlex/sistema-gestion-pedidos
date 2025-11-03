@@ -6,6 +6,7 @@ import com.practica.pedidos.dto.PedidoDTO;
 import com.practica.pedidos.entity.DetallePedido;
 import com.practica.pedidos.entity.Pedido;
 import com.practica.pedidos.exception.BadRequestException;
+import com.practica.pedidos.exception.ResourceNotFoundException;
 import com.practica.pedidos.repository.DetallePedidoRepository;
 import com.practica.pedidos.repository.PedidoRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -25,18 +28,21 @@ public class PedidoService {
     private final DetallePedidoRepository detallePedidoRepository;
     private final ProductoClient productoClient;
 
-    public Flux<PedidoDTO> listarTodos() {
+    public Flux<PedidoDTO> getAll() {
         return pedidoRepository.findAll()
-                .flatMap(this::enrichPedidoWithDetalles);
+                .flatMap(this::enrichPedidoWithDetalles)
+                .onErrorResume(error ->
+                        Flux.error(new RuntimeException("Error al listar pedidos: " + error.getMessage(), error)));
     }
 
-    public Mono<PedidoDTO> buscarPorId(Long id) {
+    public Mono<PedidoDTO> getById(Long id) {
         return pedidoRepository.findById(id)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException("Pedido no encontrado con id: " + id)))
                 .flatMap(this::enrichPedidoWithDetalles);
     }
 
     @Transactional
-    public Mono<PedidoDTO> crear(PedidoDTO pedidoDTO) {
+    public Mono<PedidoDTO> create(PedidoDTO pedidoDTO) {
         return validarPedido(pedidoDTO)
                 .then(validarProductos(pedidoDTO))
                 .flatMap(validatedDTO -> {
@@ -54,7 +60,7 @@ public class PedidoService {
     }
 
     @Transactional
-    public Mono<PedidoDTO> actualizarEstado(Long id, String nuevoEstado) {
+    public Mono<PedidoDTO> updateStatus(Long id, String nuevoEstado) {
         if (!List.of("PENDIENTE", "PROCESADO", "CANCELADO").contains(nuevoEstado)) {
             return Mono.error(new BadRequestException("Estado inválido"));
         }
@@ -69,7 +75,7 @@ public class PedidoService {
     }
 
     @Transactional
-    public Mono<Void> eliminar(Long id) {
+    public Mono<Void> delete(Long id) {
         return pedidoRepository.findById(id)
                 .switchIfEmpty(Mono.error(new BadRequestException("Pedido no encontrado")))
                 .flatMap(pedido -> detallePedidoRepository.deleteAll(pedido.getDetalles())
@@ -79,7 +85,11 @@ public class PedidoService {
     private Mono<PedidoDTO> enrichPedidoWithDetalles(Pedido pedido) {
         return detallePedidoRepository.findByPedidoId(pedido.getId())
                 .collectList()
-                .map(detalles -> convertToDTO(pedido, detalles));
+                .map(detalles -> convertToDTO(pedido, detalles))
+                .onErrorResume(error -> {
+                    // Si falla la recuperación de detalles, devolver pedido sin detalles
+                    return Mono.error(new RuntimeException("Error al obtener detalles del pedido: " + error.getMessage(), error));
+                });
     }
 
     private Mono<PedidoDTO> validarPedido(PedidoDTO pedidoDTO) {
@@ -127,8 +137,13 @@ public class PedidoService {
     private Mono<Void> actualizarStockProductos(List<DetallePedidoDTO> detalles) {
         return Flux.fromIterable(detalles)
                 .flatMap(detalle -> productoClient.actualizarStock(
-                        detalle.getProductoId(),
-                        -detalle.getCantidad()))
+                                detalle.getProductoId(),
+                                -detalle.getCantidad())
+                        .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
+                                .maxBackoff(Duration.ofSeconds(5)))
+                        .onErrorResume(error ->
+                                Mono.error(new RuntimeException("Error al actualizar stock del producto "
+                                        + detalle.getProductoId() + ": " + error.getMessage(), error))))
                 .then();
     }
 

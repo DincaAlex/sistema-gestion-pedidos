@@ -42,8 +42,7 @@ public class ProductoController {
     public Mono<ResponseEntity<ProductoDTO>> getById(
             @Parameter(description = "ID del producto") @PathVariable Long id) {
         return productoService.getById(id)
-                .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.notFound().build());
+                .map(ResponseEntity::ok);
     }
 
     @Operation(summary = "Crear nuevo producto", description = "Crea un nuevo producto en el sistema")

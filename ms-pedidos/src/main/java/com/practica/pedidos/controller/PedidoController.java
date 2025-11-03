@@ -28,7 +28,7 @@ public class PedidoController {
     })
     @GetMapping
     public Flux<PedidoDTO> getAll() {
-        return pedidoService.listarTodos();
+        return pedidoService.getAll();
     }
 
     @Operation(summary = "Obtener pedido por ID", description = "Busca un pedido específico por su ID")
@@ -39,8 +39,9 @@ public class PedidoController {
     @GetMapping("/{id}")
     public Mono<ResponseEntity<PedidoDTO>> getById(
             @Parameter(description = "ID del pedido") @PathVariable Long id) {
-        return pedidoService.buscarPorId(id)
-                .map(ResponseEntity::ok);
+        return pedidoService.getById(id)
+                .map(ResponseEntity::ok)
+                .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
     }
 
     @Operation(summary = "Crear nuevo pedido", description = "Crea un nuevo pedido en el sistema")
@@ -50,7 +51,7 @@ public class PedidoController {
     })
     @PostMapping
     public Mono<ResponseEntity<PedidoDTO>> create(@RequestBody PedidoDTO pedidoDTO) {
-        return pedidoService.crear(pedidoDTO)
+        return pedidoService.create(pedidoDTO)
                 .map(pedido -> ResponseEntity.status(HttpStatus.CREATED).body(pedido));
     }
 
@@ -64,7 +65,7 @@ public class PedidoController {
     public Mono<ResponseEntity<PedidoDTO>> updateStatus(
             @Parameter(description = "ID del pedido") @PathVariable Long id,
             @Parameter(description = "Nuevo estado (PENDIENTE, PROCESADO, CANCELADO)") @RequestParam String estado) {
-        return pedidoService.actualizarEstado(id, estado)
+        return pedidoService.updateStatus(id, estado)
                 .map(ResponseEntity::ok);
     }
 
@@ -76,7 +77,7 @@ public class PedidoController {
     @DeleteMapping("/{id}")
     public Mono<ResponseEntity<Void>> delete(
             @Parameter(description = "ID del pedido") @PathVariable Long id) {
-        return pedidoService.eliminar(id)
+        return pedidoService.delete(id)
                 .then(Mono.just(ResponseEntity.noContent().<Void>build()));
     }
 }
