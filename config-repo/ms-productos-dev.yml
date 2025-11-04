@@ -25,3 +25,8 @@ logging:
   level:
     root: INFO
     com.practica.productos: DEBUG
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8099/eureka/

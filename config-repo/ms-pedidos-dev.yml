@@ -28,3 +28,8 @@ logging:
   level:
     root: INFO
     com.practica.pedidos: DEBUG
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8099/eureka/
