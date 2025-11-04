@@ -1,0 +1,23 @@
+server:
+  port: 8080
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8099/eureka/
+
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enable: true
+      routes:
+        - id: ms-productos
+          uri: lb://ms-productos
+          predicates:
+            - Path=/productos/**
+        - id: ms-pedidos
+          uri: lb://ms-pedidos
+          predicates:
+            - Path=/pedidos/**
