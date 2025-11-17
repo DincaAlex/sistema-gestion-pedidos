@@ -13,10 +13,16 @@ spring:
         locator:
           enable: true
       routes:
+        - id: ms-productos-v2
+          uri: lb://ms-productos-v2
+          predicates:
+            - Path=/api/v2/productos
+            - Path=/api/v2/productos/**
         - id: ms-productos
           uri: lb://ms-productos
           predicates:
-            - Path=/api/productos/**
+            - Path=/api/v1/productos
+            - Path=/api/v1/productos/**
         - id: ms-pedidos
           uri: lb://ms-pedidos
           predicates:
