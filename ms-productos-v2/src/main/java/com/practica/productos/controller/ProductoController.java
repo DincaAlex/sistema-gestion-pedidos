@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono;
 
 @Tag(name = "Productos", description = "API para gestión de productos")
 @RestController
-@RequestMapping("/api/productos")
+@RequestMapping("/api/v2/productos")
 @RequiredArgsConstructor
 public class ProductoController {
 

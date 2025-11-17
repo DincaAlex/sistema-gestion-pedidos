@@ -26,8 +26,9 @@ dependencies {
 	implementation 'org.springframework.cloud:spring-cloud-starter-gateway'
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
-	// Micrometer Prometheus registry for metrics
+    // Micrometer Prometheus registry for metrics
 	implementation 'io.micrometer:micrometer-registry-prometheus'
 
 	// Micrometer Tracing

@@ -83,6 +83,8 @@ services:
   config-server:
     image: config-server:latest
     container_name: config-server
+    ports:
+      - "8888:8888"
     networks:
       - microservices-network
     healthcheck:

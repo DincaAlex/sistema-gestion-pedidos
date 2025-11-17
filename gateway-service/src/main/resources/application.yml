@@ -6,6 +6,10 @@ spring:
     name: gateway-service
   cloud:
     gateway:
+      discovery:
+        locator:
+          enabled: true
+          lowerCaseServiceId: true
       x-forwarded:
         enabled: true
         for-enabled: true
@@ -81,8 +85,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,gateway
   endpoint:
+    gateway:
+      enabled: true
     health:
       show-details: always
     prometheus:
