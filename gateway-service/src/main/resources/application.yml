@@ -42,10 +42,22 @@ spring:
           uri: lb://ms-productos
           predicates:
             - Path=/api/productos/**
+        - id: ms-productos-v2
+          uri: lb://ms-productos-v2
+          predicates:
+            - Path=/api/productos-v2/**
         - id: ms-pedidos
           uri: lb://ms-pedidos
           predicates:
             - Path=/api/pedidos/**
+        - id: resource-server
+          uri: lb://resource-server
+          predicates:
+            - Path=/api/resources/**
+        - id: oauth-client
+          uri: lb://oauth-client
+          predicates:
+            - Path=/client/**
 
 logging:
   pattern:
