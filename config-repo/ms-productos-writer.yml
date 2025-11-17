@@ -36,9 +36,9 @@ spring.r2dbc:
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://localhost:8099/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://registry-service:8099/eureka/}
     registerWithEureka: true
-    fetchRegistry: false
+    fetchRegistry: true
   instance:
     preferIpAddress: false
     hostname: ms-productos-writer

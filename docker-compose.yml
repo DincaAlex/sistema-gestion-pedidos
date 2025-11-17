@@ -1,0 +1,462 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker-init:/docker-entrypoint-initdb.d
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Zookeeper - Kafka coordination
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka - Message broker
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Kafka UI - Web interface for Kafka
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
+  # Config Server
+  config-server:
+    image: config-server:latest
+    container_name: config-server
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8888/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Registry Service (Eureka)
+  registry-service:
+    image: registry-service:latest
+    container_name: registry-service
+    ports:
+      - "8099:8099"
+    environment:
+      SPRING_CONFIG_IMPORT: configserver:http://config-server:8888
+    depends_on:
+      config-server:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8099/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # MS-Productos
+  ms-productos:
+    image: ms-productos:latest
+    container_name: ms-productos
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_PROFILES_ACTIVE: dev
+      DB_USERNAME: postgres
+      DB_PASSWORD: admin
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/db_productos_dev
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8099/eureka/
+      OAUTH_ISSUER_URI: http://localhost:8080
+      OAUTH_JWK_SET_URI: http://gateway-service:8080/oauth2/jwks
+    extra_hosts:
+      - "localhost:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      registry-service:
+        condition: service_healthy
+      oauth-server:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:8081/api/productos || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # MS-Productos-V2 (Asynchronous Write with Kafka)
+  ms-productos-v2:
+    image: ms-productos-v2:latest
+    container_name: ms-productos-v2
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_R2DBC_USERNAME: postgres
+      SPRING_R2DBC_PASSWORD: admin
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/db_productos_dev
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8099/eureka/
+      OAUTH_ISSUER_URI: http://localhost:8080
+      OAUTH_JWK_SET_URI: http://gateway-service:8080/oauth2/jwks
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    extra_hosts:
+      - "localhost:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      registry-service:
+        condition: service_healthy
+      oauth-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:8086/actuator/health || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # MS-Productos-Writer (Kafka Consumer for async writes)
+  ms-productos-writer:
+    image: ms-productos-writer:latest
+    container_name: ms-productos-writer
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_USERNAME: postgres
+      DB_PASSWORD: admin
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/db_productos_dev
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:8087/actuator/health || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # MS-Pedidos
+  ms-pedidos:
+    image: ms-pedidos:latest
+    container_name: ms-pedidos
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_PROFILES_ACTIVE: dev
+      DB_USERNAME: postgres
+      DB_PASSWORD: admin
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/db_pedidos_dev
+      MS_PRODUCTOS_URL: http://ms-productos:8081
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8099/eureka/
+      OAUTH_ISSUER_URI: http://localhost:8080
+      OAUTH_JWK_SET_URI: http://gateway-service:8080/oauth2/jwks
+    extra_hosts:
+      - "localhost:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      registry-service:
+        condition: service_healthy
+      oauth-server:
+        condition: service_healthy
+      ms-productos:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:8082/api/pedidos || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # Gateway Service
+  gateway-service:
+    image: gateway-service:latest
+    container_name: gateway-service
+    ports:
+      - "8080:8080"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8099/eureka/
+      OAUTH_ISSUER_URI: http://localhost:8080
+      OAUTH_SERVER_URI: http://oauth-server:9000
+    extra_hosts:
+      - "localhost:host-gateway"
+    depends_on:
+      registry-service:
+        condition: service_healthy
+      oauth-server:
+        condition: service_healthy
+      ms-productos:
+        condition: service_healthy
+      ms-pedidos:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:8080/api/productos || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+
+  # OAuth Authorization Server
+  oauth-server:
+    image: oauth-server:latest
+    container_name: oauth-server
+    ports:
+      - "9000:9000"
+    environment:
+      SPRING_APPLICATION_NAME: oauth-server
+      SERVER_PORT: 9000
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: ERROR
+      OAUTH_ISSUER: http://localhost:8080
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8099/eureka/
+    depends_on:
+      config-server:
+        condition: service_healthy
+      registry-service:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:9000/actuator/health || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # OAuth Resource Server
+  resource-server:
+    image: resource-server:latest
+    container_name: resource-server
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_APPLICATION_NAME: resource-server
+      SERVER_PORT: 8084
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://gateway-service:8080
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: ERROR
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8099/eureka/
+    depends_on:
+      config-server:
+        condition: service_healthy
+      registry-service:
+        condition: service_healthy
+      gateway-service:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:8084/actuator/health || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # OAuth Client
+  oauth-client:
+    image: oauth-client:latest
+    container_name: oauth-client
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_APPLICATION_NAME: oauth-client
+      SERVER_PORT: 8085
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8099/eureka/
+    depends_on:
+      config-server:
+        condition: service_healthy
+      registry-service:
+        condition: service_healthy
+      oauth-server:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:8085/actuator/health || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ===== OBSERVABILITY STACK =====
+
+  # Prometheus - Metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--enable-feature=exemplar-storage'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  # Loki - Log aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yml
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/local-config.yml
+      - loki-data:/tmp/loki
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    user: "0"
+
+  # Promtail - Log collector
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - microservices-network
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  # Tempo - Distributed tracing
+  tempo:
+    image: grafana/tempo:latest
+    container_name: tempo
+    command: [ "-config.file=/etc/tempo.yml" ]
+    volumes:
+      - ./monitoring/tempo-config.yml:/etc/tempo.yml
+      - tempo-data:/tmp/tempo
+    ports:
+      - "4317:4317"   # otlp grpc
+      - "4318:4318"   # otlp http
+      - "9411:9411"   # zipkin
+      - "14268:14268" # jaeger ingest
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    user: "0"
+
+  # Grafana - Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor
+    volumes:
+      - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./monitoring/grafana-dashboards/dashboard-provider.yml:/etc/grafana/provisioning/dashboards/dashboard-provider.yml
+      - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
+      - grafana-data:/var/lib/grafana
+    networks:
+      - microservices-network
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    restart: unless-stopped
+
+networks:
+  microservices-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  prometheus-data:
+  loki-data:
+  tempo-data:
+  grafana-data:

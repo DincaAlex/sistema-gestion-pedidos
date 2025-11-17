@@ -1,0 +1,90 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      x-forwarded:
+        enabled: true
+        for-enabled: true
+        proto-enabled: true
+        host-enabled: true
+        port-enabled: true
+        prefix-enabled: true
+      routes:
+        - id: oauth-well-known
+          uri: http://oauth-server:9000
+          predicates:
+            - Path=/.well-known/**
+          filters:
+            - PreserveHostHeader
+        - id: oauth-oauth2
+          uri: http://oauth-server:9000
+          predicates:
+            - Path=/oauth2/**
+          filters:
+            - PreserveHostHeader
+        - id: oauth-login
+          uri: http://oauth-server:9000
+          predicates:
+            - Path=/login,/logout
+          filters:
+            - PreserveHostHeader
+        - id: oauth-static-resources
+          uri: http://oauth-server:9000
+          predicates:
+            - Path=/css/**,/js/**,/images/**,/webjars/**,/assets/**,/*.css,/*.js
+          filters:
+            - PreserveHostHeader
+        - id: ms-productos
+          uri: lb://ms-productos
+          predicates:
+            - Path=/api/productos/**
+        - id: ms-pedidos
+          uri: lb://ms-pedidos
+          predicates:
+            - Path=/api/pedidos/**
+
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web: DEBUG
+    com.practica: DEBUG
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://registry-service:8099/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://tempo:4318/v1/traces

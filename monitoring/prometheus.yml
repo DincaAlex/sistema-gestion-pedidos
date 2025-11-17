@@ -1,0 +1,91 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'microservices-cluster'
+    environment: 'dev'
+
+# Configuración de Alertmanager (opcional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Spring Boot microservices
+  - job_name: 'config-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['config-server:8888']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'config-server'
+
+  - job_name: 'registry-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['registry-service:8099']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'registry-service'
+
+  - job_name: 'ms-productos'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['ms-productos:8081']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'ms-productos'
+
+  - job_name: 'ms-pedidos'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['ms-pedidos:8082']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'ms-pedidos'
+
+  - job_name: 'gateway-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['gateway-service:8080']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'gateway-service'
+
+  - job_name: 'oauth-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['oauth-server:9000']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'oauth-server'
+
+  - job_name: 'resource-server'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['resource-server:8084']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'resource-server'
+
+  - job_name: 'oauth-client'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['oauth-client:8085']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'oauth-client'
