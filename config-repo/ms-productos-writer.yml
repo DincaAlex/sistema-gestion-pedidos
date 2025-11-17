@@ -1,0 +1,77 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: ms-productos-writer
+  profiles:
+    active: dev
+
+# Kafka Configuration
+kafka:
+  topic:
+    producto-events: producto-events
+  consumer:
+    group-id: productos-writer-group
+
+spring.kafka:
+  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  consumer:
+    group-id: ${kafka.consumer.group-id}
+    key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+    properties:
+      spring.json.trusted.packages: "*"
+    auto-offset-reset: earliest
+    enable-auto-commit: false
+    max-poll-records: 10
+
+# R2DBC Configuration (PostgreSQL)
+spring.r2dbc:
+  url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/db_productos_dev}
+  username: ${DB_USERNAME:postgres}
+  password: ${DB_PASSWORD:admin}
+
+# Eureka Client Configuration (optional for monitoring)
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8099/eureka/
+    registerWithEureka: true
+    fetchRegistry: false
+  instance:
+    preferIpAddress: false
+    hostname: ms-productos-writer
+    statusPageUrlPath: /actuator/info
+    healthCheckUrlPath: /actuator/health
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+
+# Tracing
+management.tracing.sampling.probability: 1.0
+management.otlp.tracing.endpoint: http://tempo:4318/v1/traces
+
+# Logging
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  level:
+    root: INFO
+    org.springframework.kafka: DEBUG
+    com.practica: DEBUG

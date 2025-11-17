@@ -1,0 +1,60 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: oauth-server
+
+# OAuth2 Authorization Server Issuer
+spring.security.oauth2.authorizationserver.issuer: ${OAUTH_ISSUER:http://localhost:8080}
+
+# Forward headers configuration
+server.forward-headers-strategy: framework
+
+# Eureka Client Configuration
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://registry-service:8099/eureka/}
+    registerWithEureka: true
+    fetchRegistry: true
+  instance:
+    preferIpAddress: false
+    hostname: oauth-server
+    statusPageUrlPath: /actuator/info
+    healthCheckUrlPath: /actuator/health
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+    tags:
+      application: ${spring.application.name}
+
+# Tracing
+management.tracing.sampling.probability: 1.0
+management.otlp.tracing.endpoint: http://tempo:4318/v1/traces
+
+# Logging
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]"
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+    org.springframework.security: ERROR
+    com.practica: DEBUG

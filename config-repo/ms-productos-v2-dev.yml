@@ -1,0 +1,32 @@
+server:
+  port: 8086
+
+spring:
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/db_productos_dev
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:admin}
+    pool:
+      initial-size: 10
+      max-size: 20
+      max-idle-time: 30m
+      validation-query: SELECT 1
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  show-actuator: false
+
+logging:
+  level:
+    root: INFO
+    com.practica.productos: DEBUG
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8099/eureka/
