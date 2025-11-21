@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: ms-productos-v3
+  config:
+    import: optional:configserver:http://localhost:8888
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  r2dbc:
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://localhost:5432/db_productos_dev}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:admin}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        acks: all
+        retries: 3
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH_ISSUER_URI:http://localhost:8080}
+          jwk-set-uri: ${OAUTH_JWK_SET_URI:http://gateway-service:8080/oauth2/jwks}
+
+server:
+  port: ${SERVER_PORT:8088}
+
+kafka:
+  topic:
+    producto-events: producto-events
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: http://tempo:4318/v1/traces
+
+logging:
+  pattern:
+    level: '%5p [${spring.application.name:},%X{traceId:-},%X{spanId:-}]'
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+    com.practica: DEBUG
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_SERVER_URL:http://registry-service:8099/eureka/}
+    enabled: ${EUREKA_ENABLED:true}
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    preferIpAddress: true

@@ -42,6 +42,11 @@ spring:
             - Path=/css/**,/js/**,/images/**,/webjars/**,/assets/**,/*.css,/*.js
           filters:
             - PreserveHostHeader
+        - id: ms-productos-v3
+          uri: lb://ms-productos-v3
+          predicates:
+            - Path=/api/v3/productos
+            - Path=/api/v3/productos/**
         - id: ms-productos-v2
           uri: lb://ms-productos-v2
           predicates:

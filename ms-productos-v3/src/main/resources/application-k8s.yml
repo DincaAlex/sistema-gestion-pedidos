@@ -1,0 +1,92 @@
+spring:
+  application:
+    name: ms-productos-v3
+
+  # Deshabilitar autoconfiguración de OAuth2 en K8s
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.oauth2.resource.reactive.ReactiveOAuth2ResourceServerAutoConfiguration
+
+  # Conexión a PostgreSQL externo (Docker Compose)
+  r2dbc:
+    url: ${SPRING_R2DBC_URL:r2dbc:postgresql://host.docker.internal:5432/db_productos_dev}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    pool:
+      initial-size: 5
+      max-size: 20
+      max-idle-time: 30m
+      validation-query: SELECT 1
+
+  # Deshabilitar Flyway (ya está inicializada la BD)
+  flyway:
+    enabled: false
+
+  # Configuración de Kafka para conectar a Docker Compose
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:host.docker.internal:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: ms-productos-v3-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
+  # Deshabilitar seguridad OAuth2 para K8s
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ""
+          jwk-set-uri: ""
+
+  # Config Server deshabilitado en K8s
+  cloud:
+    config:
+      enabled: false
+
+# Configuración del servidor
+server:
+  port: 8088
+
+# Kafka topics
+kafka:
+  topic:
+    producto-events: producto-events
+
+# Actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  health:
+    readiness-state:
+      enabled: true
+    liveness-state:
+      enabled: true
+  # Deshabilitar tracing en K8s (Tempo no disponible)
+  tracing:
+    enabled: false
+
+# Deshabilitar Eureka en K8s
+eureka:
+  client:
+    enabled: false
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.practica.productos: DEBUG
+    io.r2dbc: DEBUG
+    org.springframework.kafka: INFO

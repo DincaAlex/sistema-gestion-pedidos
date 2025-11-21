@@ -25,3 +25,32 @@ INSERT INTO productos (nombre, descripcion, precio, stock, activo) VALUES
 ('Auriculares Sony WH-1000XM4', 'Cancelación de ruido activa', 349.99, 15, true),
 ('Mouse Pad RGB XL', 'Superficie de tela, iluminación RGB', 29.99, 100, true),
 ('Hub USB-C 7 en 1', 'HDMI, USB 3.0, lector SD', 59.99, 40, true);
+
+-- Procedimientos almacenados
+CREATE OR REPLACE FUNCTION actualizar_stock(p_producto_id bigint, p_cantidad integer)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    UPDATE productos
+    SET stock = stock - p_cantidad
+    WHERE id = p_producto_id AND activo = true;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Producto no encontrado o inactivo';
+    END IF;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION productos_bajo_stock(p_minimo integer)
+RETURNS TABLE(id bigint, nombre character varying, stock integer, precio numeric)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+        SELECT p.id, p.nombre, p.stock, p.precio
+        FROM productos p
+        WHERE p.stock < p_minimo AND p.activo = true
+        ORDER BY p.stock ASC;
+END;
+$$;

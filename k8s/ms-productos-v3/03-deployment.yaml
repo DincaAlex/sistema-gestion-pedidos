@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-productos-v3
+  namespace: practica
+  labels:
+    app: ms-productos-v3
+    version: v1.0.0
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ms-productos-v3
+  template:
+    metadata:
+      labels:
+        app: ms-productos-v3
+        version: v1.0.0
+    spec:
+      imagePullSecrets:
+        - name: harbor-secret
+      containers:
+        - name: ms-productos-v3
+          image: localhost:30002/library/ms-productos-v3:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8088
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: ms-productos-v3-config
+            - secretRef:
+                name: ms-productos-v3-secret
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8088
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8088
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"

@@ -46,7 +46,7 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://host.docker.internal:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
@@ -205,6 +205,44 @@ services:
       - microservices-network
     healthcheck:
       test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:8087/actuator/health || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # MS-Productos-V3 (API-First approach)
+  ms-productos-v3:
+    image: ms-productos-v3:latest
+    container_name: ms-productos-v3
+    ports:
+      - "8088:8088"
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SPRING_PROFILES_ACTIVE: dev
+      DB_USERNAME: postgres
+      DB_PASSWORD: admin
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres:5432/db_productos_dev
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-service:8099/eureka/
+      OAUTH_ISSUER_URI: http://localhost:8080
+      OAUTH_JWK_SET_URI: http://gateway-service:8080/oauth2/jwks
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    extra_hosts:
+      - "localhost:host-gateway"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      registry-service:
+        condition: service_healthy
+      oauth-server:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "sh", "-c", "wget --quiet --tries=1 --spider http://localhost:8088/actuator/health || exit 0"]
       interval: 10s
       timeout: 5s
       retries: 30

@@ -10,3 +10,15 @@ build/
 # IDE
 .claude
 .vscode
+
+# SonarQube/SonarCloud
+.sonar/
+.scannerwork/
+
+# Test reports
+**/test-results/
+**/reports/
+
+# JaCoCo
+*.exec
+jacoco.xml
