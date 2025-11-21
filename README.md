@@ -12,11 +12,11 @@ Sistema de microservicios reactivo para la gestión de pedidos y productos, con 
                                          │
                     ┌────────────────────┼────────────────────┐
                     │                    │                    │
-           ┌────────▼────────┐  ┌────────▼────────┐  ┌───────▼──────┐
-           │  ms-productos   │  │ ms-productos-v2 │  │  ms-pedidos  │
-           │   (Port: 8081)  │  │  (Port: 8086)   │  │ (Port: 8082) │
-           │   Sync CRUD     │  │  Async + Kafka  │  │              │
-           └────────┬────────┘  └────────┬────────┘  └──────┬───────┘
+           ┌────────▼────────┐  ┌────────▼────────┐  ┌────────▼────────┐  ┌───────▼──────┐
+           │  ms-productos   │  │ ms-productos-v2 │  │ ms-productos-v3 │  │  ms-pedidos  │
+           │   (Port: 8081)  │  │  (Port: 8086)   │  │  (Port: 8088)   │  │ (Port: 8082) │
+           │   Sync CRUD     │  │  Async + Kafka  │  │  API-First+K8s  │  │              │
+           └────────┬────────┘  └────────┬────────┘  └────────┬────────┘  └──────┬───────┘
                     │                    │ Publish           │
                     │           ┌────────▼────────┐          │
                     │           │  Kafka (9092)   │          │
@@ -99,12 +99,14 @@ Sistema de microservicios reactivo para la gestión de pedidos y productos, con 
 
 La forma más rápida de ejecutar todo el sistema:
 
+**Nota**: `ms-productos-v3` se despliega con **Kubernetes + Harbor** (ver su [README](ms-productos-v3/README.md)). Los demás servicios usan Docker Compose.
+
 ```bash
 # 1. Construir todas las imágenes
 ./build-all.sh  # Linux/Mac
 # o ejecutar los .bat individuales en Windows
 
-# 2. Iniciar todos los servicios
+# 2. Iniciar todos los servicios (excepto ms-productos-v3)
 docker-compose up -d
 
 # 3. Verificar que todo esté corriendo
@@ -143,6 +145,7 @@ Ver más detalles de Docker en [README-Docker.md](README-Docker.md)
 | ms-pedidos | 8082 | Microservicio de pedidos |
 | ms-productos-v2 | 8086 | Microservicio de productos (async + Kafka) |
 | ms-productos-writer | 8087 | Consumer de eventos Kafka |
+| ms-productos-v3 | 8088 | Microservicio de productos (API-First + Kubernetes) |
 | Kafka UI | 8090 | Interfaz web de Kafka |
 | Registry (Eureka) | 8099 | Service Discovery |
 | Config Server | 8888 | Servidor de configuración |
@@ -881,6 +884,19 @@ Este sistema está completamente construido con programación reactiva:
 - Confirmación manual de offsets
 - Manejo de errores y logging
 - Build tool: Gradle
+
+### ms-productos-v3 (Puerto 8088 / NodePort 30088)
+- Gestión de productos con enfoque **API-First**
+- Código generado desde especificación OpenAPI
+- Arquitectura reactiva con WebFlux + R2DBC
+- Event-Driven con Kafka
+- **Único servicio desplegado en Kubernetes**
+- Imágenes almacenadas en **Harbor** registry (localhost:30002)
+- DTOs y validaciones generadas automáticamente
+- Health probes (liveness/readiness)
+- Resource limits configurados
+- Build tool: Gradle
+- Ver [ms-productos-v3/README.md](ms-productos-v3/README.md) para instrucciones de despliegue K8s
 
 ### ms-pedidos (Puerto 8082)
 - Gestión de pedidos con múltiples productos
