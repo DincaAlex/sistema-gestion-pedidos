@@ -7,6 +7,8 @@ import com.practica.productos.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ServerWebExchange;
@@ -62,6 +64,50 @@ public class GlobalExceptionHandler {
         error.setErrors(Collections.singletonList(detail));
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorModel> handleAuthenticationException(
+            AuthenticationException ex,
+            ServerWebExchange exchange) {
+
+        log.error("Authentication error: {}", ex.getMessage());
+
+        ErrorDetail detail = new ErrorDetail();
+        detail.setCode("E401_UNAUTHORIZED");
+        detail.setMessage("Autenticación requerida");
+
+        ErrorModel error = new ErrorModel();
+        error.setTimestamp(OffsetDateTime.now(ZoneOffset.UTC));
+        error.setStatus(401);
+        error.setError("No Autorizado");
+        error.setMessage("Credenciales de autenticación no válidas o ausentes");
+        error.setPath(exchange.getRequest().getPath().value());
+        error.setErrors(Collections.singletonList(detail));
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorModel> handleAccessDeniedException(
+            AccessDeniedException ex,
+            ServerWebExchange exchange) {
+
+        log.error("Access denied: {}", ex.getMessage());
+
+        ErrorDetail detail = new ErrorDetail();
+        detail.setCode("E403_FORBIDDEN");
+        detail.setMessage("Acceso denegado");
+
+        ErrorModel error = new ErrorModel();
+        error.setTimestamp(OffsetDateTime.now(ZoneOffset.UTC));
+        error.setStatus(403);
+        error.setError("Prohibido");
+        error.setMessage("No tiene permisos para acceder a este recurso");
+        error.setPath(exchange.getRequest().getPath().value());
+        error.setErrors(Collections.singletonList(detail));
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
     }
 
     @ExceptionHandler(Exception.class)

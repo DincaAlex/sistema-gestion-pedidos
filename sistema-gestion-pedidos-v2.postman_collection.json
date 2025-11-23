@@ -1,0 +1,869 @@
+{
+  "info": {
+    "name": "Sistema Gestión Pedidos - Complete",
+    "description": "Colección completa de APIs para el sistema de gestión de pedidos y productos con soporte OAuth2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "1"
+  },
+  "auth": {
+    "type": "oauth2",
+    "oauth2": [
+      {
+        "key": "accessToken",
+        "value": "{{access_token}}",
+        "type": "string"
+      },
+      {
+        "key": "tokenType",
+        "value": "Bearer",
+        "type": "string"
+      },
+      {
+        "key": "addTokenTo",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "oauth_server",
+      "value": "http://localhost:9000",
+      "type": "string"
+    },
+    {
+      "key": "ms_productos_v3_url",
+      "value": "http://localhost:30088",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "OAuth2",
+      "description": "Autenticación y autorización OAuth2",
+      "item": [
+        {
+          "name": "Get Access Token (Client Credentials)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
+                  "    console.log(\"Access token saved:\", jsonData.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "client",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "secret",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text"
+                },
+                {
+                  "key": "scope",
+                  "value": "read write",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{oauth_server}}/oauth2/token",
+              "host": ["{{oauth_server}}"],
+              "path": ["oauth2", "token"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "MS-PRODUCTOS (v1)",
+      "description": "Microservicio de productos - versión 1 (puerto 8081)",
+      "item": [
+        {
+          "name": "Listar Todos los Productos",
+          "request": {
+            "auth": {
+              "type": "oauth2",
+              "oauth2": [
+                {
+                  "key": "accessToken",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                },
+                {
+                  "key": "tokenType",
+                  "value": "Bearer",
+                  "type": "string"
+                },
+                {
+                  "key": "addTokenTo",
+                  "value": "header",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/productos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "productos"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Producto por ID",
+          "request": {
+            "auth": {
+              "type": "oauth2",
+              "oauth2": [
+                {
+                  "key": "accessToken",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                },
+                {
+                  "key": "tokenType",
+                  "value": "Bearer",
+                  "type": "string"
+                },
+                {
+                  "key": "addTokenTo",
+                  "value": "header",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/productos/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "productos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Crear Producto",
+          "request": {
+            "auth": {
+              "type": "oauth2",
+              "oauth2": [
+                {
+                  "key": "accessToken",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                },
+                {
+                  "key": "tokenType",
+                  "value": "Bearer",
+                  "type": "string"
+                },
+                {
+                  "key": "addTokenTo",
+                  "value": "header",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Nuevo Producto\",\n  \"descripcion\": \"Descripción del producto\",\n  \"precio\": 99.99,\n  \"stock\": 50,\n  \"activo\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/productos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "productos"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Producto",
+          "request": {
+            "auth": {
+              "type": "oauth2",
+              "oauth2": [
+                {
+                  "key": "accessToken",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                },
+                {
+                  "key": "tokenType",
+                  "value": "Bearer",
+                  "type": "string"
+                },
+                {
+                  "key": "addTokenTo",
+                  "value": "header",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Producto Actualizado\",\n  \"descripcion\": \"Descripción actualizada\",\n  \"precio\": 149.99,\n  \"stock\": 75,\n  \"activo\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/productos/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "productos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Producto",
+          "request": {
+            "auth": {
+              "type": "oauth2",
+              "oauth2": [
+                {
+                  "key": "accessToken",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                },
+                {
+                  "key": "tokenType",
+                  "value": "Bearer",
+                  "type": "string"
+                },
+                {
+                  "key": "addTokenTo",
+                  "value": "header",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/productos/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "productos", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "MS-PRODUCTOS-V2 (CQRS)",
+      "description": "Microservicio de productos v2 - CQRS Pattern (puerto 8082 read, 8083 write)",
+      "item": [
+        {
+          "name": "Read Service",
+          "item": [
+            {
+              "name": "Listar Todos los Productos",
+              "request": {
+                "auth": {
+                  "type": "oauth2",
+                  "oauth2": [
+                    {
+                      "key": "accessToken",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    },
+                    {
+                      "key": "tokenType",
+                      "value": "Bearer",
+                      "type": "string"
+                    },
+                    {
+                      "key": "addTokenTo",
+                      "value": "header",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v2/productos",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v2", "productos"]
+                }
+              }
+            },
+            {
+              "name": "Obtener Producto por ID",
+              "request": {
+                "auth": {
+                  "type": "oauth2",
+                  "oauth2": [
+                    {
+                      "key": "accessToken",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    },
+                    {
+                      "key": "tokenType",
+                      "value": "Bearer",
+                      "type": "string"
+                    },
+                    {
+                      "key": "addTokenTo",
+                      "value": "header",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v2/productos/1",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v2", "productos", "1"]
+                }
+              }
+            },
+            {
+              "name": "Obtener Productos con Stock Bajo",
+              "request": {
+                "auth": {
+                  "type": "oauth2",
+                  "oauth2": [
+                    {
+                      "key": "accessToken",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    },
+                    {
+                      "key": "tokenType",
+                      "value": "Bearer",
+                      "type": "string"
+                    },
+                    {
+                      "key": "addTokenTo",
+                      "value": "header",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v2/productos/stock-bajo?minimo=10",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v2", "productos", "stock-bajo"],
+                  "query": [
+                    {
+                      "key": "minimo",
+                      "value": "10"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Write Service",
+          "item": [
+            {
+              "name": "Crear Producto",
+              "request": {
+                "auth": {
+                  "type": "oauth2",
+                  "oauth2": [
+                    {
+                      "key": "accessToken",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    },
+                    {
+                      "key": "tokenType",
+                      "value": "Bearer",
+                      "type": "string"
+                    },
+                    {
+                      "key": "addTokenTo",
+                      "value": "header",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Producto CQRS\",\n  \"descripcion\": \"Producto creado con patrón CQRS\",\n  \"precio\": 199.99,\n  \"stock\": 100,\n  \"activo\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v2/productos",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v2", "productos"]
+                }
+              }
+            },
+            {
+              "name": "Actualizar Producto",
+              "request": {
+                "auth": {
+                  "type": "oauth2",
+                  "oauth2": [
+                    {
+                      "key": "accessToken",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    },
+                    {
+                      "key": "tokenType",
+                      "value": "Bearer",
+                      "type": "string"
+                    },
+                    {
+                      "key": "addTokenTo",
+                      "value": "header",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Producto CQRS Actualizado\",\n  \"descripcion\": \"Descripción actualizada\",\n  \"precio\": 249.99,\n  \"stock\": 150,\n  \"activo\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v2/productos/1",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v2", "productos", "1"]
+                }
+              }
+            },
+            {
+              "name": "Eliminar Producto",
+              "request": {
+                "auth": {
+                  "type": "oauth2",
+                  "oauth2": [
+                    {
+                      "key": "accessToken",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    },
+                    {
+                      "key": "tokenType",
+                      "value": "Bearer",
+                      "type": "string"
+                    },
+                    {
+                      "key": "addTokenTo",
+                      "value": "header",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v2/productos/1",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v2", "productos", "1"]
+                }
+              }
+            },
+            {
+              "name": "Actualizar Stock",
+              "request": {
+                "auth": {
+                  "type": "oauth2",
+                  "oauth2": [
+                    {
+                      "key": "accessToken",
+                      "value": "{{access_token}}",
+                      "type": "string"
+                    },
+                    {
+                      "key": "tokenType",
+                      "value": "Bearer",
+                      "type": "string"
+                    },
+                    {
+                      "key": "addTokenTo",
+                      "value": "header",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/api/v2/productos/1/stock?cantidad=50",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v2", "productos", "1", "stock"],
+                  "query": [
+                    {
+                      "key": "cantidad",
+                      "value": "50"
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MS-PRODUCTOS-V3 (API-First)",
+      "description": "Microservicio de productos v3 - API-First con OpenAPI (puerto 30088 - Kubernetes)",
+      "item": [
+        {
+          "name": "Listar Todos los Productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ms_productos_v3_url}}/api/v3/productos",
+              "host": ["{{ms_productos_v3_url}}"],
+              "path": ["api", "v3", "productos"]
+            }
+          }
+        },
+        {
+          "name": "Listar Solo Activos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ms_productos_v3_url}}/api/v3/productos?onlyActive=true",
+              "host": ["{{ms_productos_v3_url}}"],
+              "path": ["api", "v3", "productos"],
+              "query": [
+                {
+                  "key": "onlyActive",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Producto por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ms_productos_v3_url}}/api/v3/productos/1",
+              "host": ["{{ms_productos_v3_url}}"],
+              "path": ["api", "v3", "productos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Crear Producto (Async)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Producto API-First\",\n  \"descripcion\": \"Creado con enfoque API-First\",\n  \"precio\": 299.99,\n  \"stock\": 200,\n  \"activo\": true\n}"
+            },
+            "url": {
+              "raw": "{{ms_productos_v3_url}}/api/v3/productos",
+              "host": ["{{ms_productos_v3_url}}"],
+              "path": ["api", "v3", "productos"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Producto (Async)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Producto API-First Actualizado\",\n  \"descripcion\": \"Actualizado con OpenAPI\",\n  \"precio\": 349.99,\n  \"stock\": 250,\n  \"activo\": true\n}"
+            },
+            "url": {
+              "raw": "{{ms_productos_v3_url}}/api/v3/productos/1",
+              "host": ["{{ms_productos_v3_url}}"],
+              "path": ["api", "v3", "productos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Eliminar Producto (Async)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{ms_productos_v3_url}}/api/v3/productos/1",
+              "host": ["{{ms_productos_v3_url}}"],
+              "path": ["api", "v3", "productos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Actualizar Stock (Async)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{ms_productos_v3_url}}/api/v3/productos/1/stock?cantidad=75",
+              "host": ["{{ms_productos_v3_url}}"],
+              "path": ["api", "v3", "productos", "1", "stock"],
+              "query": [
+                {
+                  "key": "cantidad",
+                  "value": "75"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Obtener Productos con Stock Bajo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ms_productos_v3_url}}/api/v3/productos/stock-bajo?minimo=15",
+              "host": ["{{ms_productos_v3_url}}"],
+              "path": ["api", "v3", "productos", "stock-bajo"],
+              "query": [
+                {
+                  "key": "minimo",
+                  "value": "15"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "MS-PEDIDOS",
+      "description": "Microservicio de gestión de pedidos (puerto 8084)",
+      "item": [
+        {
+          "name": "Listar Todos los Pedidos",
+          "request": {
+            "auth": {
+              "type": "oauth2",
+              "oauth2": [
+                {
+                  "key": "accessToken",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                },
+                {
+                  "key": "tokenType",
+                  "value": "Bearer",
+                  "type": "string"
+                },
+                {
+                  "key": "addTokenTo",
+                  "value": "header",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pedidos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pedidos"]
+            }
+          }
+        },
+        {
+          "name": "Obtener Pedido por ID",
+          "request": {
+            "auth": {
+              "type": "oauth2",
+              "oauth2": [
+                {
+                  "key": "accessToken",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                },
+                {
+                  "key": "tokenType",
+                  "value": "Bearer",
+                  "type": "string"
+                },
+                {
+                  "key": "addTokenTo",
+                  "value": "header",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pedidos/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pedidos", "1"]
+            }
+          }
+        },
+        {
+          "name": "Crear Pedido",
+          "request": {
+            "auth": {
+              "type": "oauth2",
+              "oauth2": [
+                {
+                  "key": "accessToken",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                },
+                {
+                  "key": "tokenType",
+                  "value": "Bearer",
+                  "type": "string"
+                },
+                {
+                  "key": "addTokenTo",
+                  "value": "header",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente\": \"Juan Pérez\",\n  \"items\": [\n    {\n      \"productoId\": 1,\n      \"cantidad\": 2\n    },\n    {\n      \"productoId\": 2,\n      \"cantidad\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/pedidos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "pedidos"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Checks",
+      "description": "Endpoints de salud de los servicios",
+      "item": [
+        {
+          "name": "Config Server Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8888/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8888",
+              "path": ["actuator", "health"]
+            }
+          }
+        },
+        {
+          "name": "Eureka Registry Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8099/actuator/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8099",
+              "path": ["actuator", "health"]
+            }
+          }
+        },
+        {
+          "name": "Gateway Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/actuator/health",
+              "host": ["{{base_url}}"],
+              "path": ["actuator", "health"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

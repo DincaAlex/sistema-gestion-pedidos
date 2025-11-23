@@ -6,6 +6,8 @@ metadata:
   labels:
     app: ms-productos-v3
     version: v1.0.0
+    project: sistema-gestion-pedidos
+    tier: backend
 spec:
   replicas: 1
   selector:
@@ -16,6 +18,8 @@ spec:
       labels:
         app: ms-productos-v3
         version: v1.0.0
+        project: sistema-gestion-pedidos
+        tier: backend
     spec:
       imagePullSecrets:
         - name: harbor-secret
