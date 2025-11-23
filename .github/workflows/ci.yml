@@ -87,12 +87,16 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Grant execute permission for mvnw
+        run: chmod +x mvnw
+        working-directory: ${{ matrix.service.path }}
+
       - name: Build with Maven
-        run: mvn clean package -DskipTests
+        run: ./mvnw clean package -DskipTests
         working-directory: ${{ matrix.service.path }}
 
       - name: Run tests
-        run: mvn test
+        run: ./mvnw test
         working-directory: ${{ matrix.service.path }}
         continue-on-error: true
 

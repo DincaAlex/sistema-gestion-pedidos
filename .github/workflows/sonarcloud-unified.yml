@@ -96,27 +96,47 @@ jobs:
 
           # MS Config Server
           if [ -f "ms-config-server/pom.xml" ]; then
-            cd ms-config-server && mvn clean compile -DskipTests && cd ..
+            echo "Building ms-config-server..."
+            cd ms-config-server
+            chmod +x mvnw
+            ./mvnw clean compile -DskipTests
+            cd ..
           fi
 
           # OAuth Server
           if [ -f "oauth-server/pom.xml" ]; then
-            cd oauth-server && mvn clean compile -DskipTests && cd ..
+            echo "Building oauth-server..."
+            cd oauth-server
+            chmod +x mvnw
+            ./mvnw clean compile -DskipTests
+            cd ..
           fi
 
           # OAuth Client
           if [ -f "oauth-client/pom.xml" ]; then
-            cd oauth-client && mvn clean compile -DskipTests && cd ..
+            echo "Building oauth-client..."
+            cd oauth-client
+            chmod +x mvnw
+            ./mvnw clean compile -DskipTests
+            cd ..
           fi
 
           # Resource Server
           if [ -f "resource-server/pom.xml" ]; then
-            cd resource-server && mvn clean compile -DskipTests && cd ..
+            echo "Building resource-server..."
+            cd resource-server
+            chmod +x mvnw
+            ./mvnw clean compile -DskipTests
+            cd ..
           fi
 
           # MS Pedidos
           if [ -f "ms-pedidos/pom.xml" ]; then
-            cd ms-pedidos && mvn clean compile -DskipTests && cd ..
+            echo "Building ms-pedidos..."
+            cd ms-pedidos
+            chmod +x mvnw
+            ./mvnw clean compile -DskipTests
+            cd ..
           fi
 
       - name: Verify build outputs
