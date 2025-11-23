@@ -119,12 +119,15 @@ jobs:
             cd ms-pedidos && mvn clean compile -DskipTests && cd ..
           fi
 
+      - name: Verify build outputs
+        run: |
+          echo "Checking build directories..."
+          ls -la */build/classes/java/main 2>/dev/null || true
+          ls -la */target/classes 2>/dev/null || true
+          echo "Checking test directories..."
+          find . -path "*/src/test/java" -type d
+
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.organization=protoboy
-            -Dsonar.projectKey=sistema-gestion-pedidos
