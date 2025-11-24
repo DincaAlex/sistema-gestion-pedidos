@@ -38,18 +38,18 @@ class PedidoControllerTest {
     void setUp() {
         pedidoDTO1 = new PedidoDTO();
         pedidoDTO1.setId(1L);
-        pedidoDTO1.setClienteId("cliente-123");
+        pedidoDTO1.setCliente("cliente-123");
         pedidoDTO1.setEstado("PENDIENTE");
         pedidoDTO1.setTotal(1500.0);
-        pedidoDTO1.setFechaCreacion(LocalDateTime.now());
+        pedidoDTO1.setFecha(LocalDateTime.now());
         pedidoDTO1.setDetalles(new ArrayList<>());
 
         pedidoDTO2 = new PedidoDTO();
         pedidoDTO2.setId(2L);
-        pedidoDTO2.setClienteId("cliente-456");
+        pedidoDTO2.setCliente("cliente-456");
         pedidoDTO2.setEstado("COMPLETADO");
         pedidoDTO2.setTotal(800.0);
-        pedidoDTO2.setFechaCreacion(LocalDateTime.now());
+        pedidoDTO2.setFecha(LocalDateTime.now());
         pedidoDTO2.setDetalles(new ArrayList<>());
     }
 
@@ -79,7 +79,7 @@ class PedidoControllerTest {
                 .expectBody(PedidoDTO.class)
                 .value(pedido -> {
                     assert pedido.getId().equals(1L);
-                    assert pedido.getClienteId().equals("cliente-123");
+                    assert pedido.getCliente().equals("cliente-123");
                 });
     }
 
@@ -98,15 +98,15 @@ class PedidoControllerTest {
     @WithMockUser
     void testCreate_ShouldReturnCreatedPedido() {
         PedidoDTO newPedido = new PedidoDTO();
-        newPedido.setClienteId("cliente-789");
+        newPedido.setCliente("cliente-789");
         newPedido.setDetalles(new ArrayList<>());
 
         PedidoDTO createdPedido = new PedidoDTO();
         createdPedido.setId(3L);
-        createdPedido.setClienteId("cliente-789");
+        createdPedido.setCliente("cliente-789");
         createdPedido.setEstado("PENDIENTE");
         createdPedido.setTotal(500.0);
-        createdPedido.setFechaCreacion(LocalDateTime.now());
+        createdPedido.setFecha(LocalDateTime.now());
         createdPedido.setDetalles(new ArrayList<>());
 
         when(pedidoService.create(any(PedidoDTO.class))).thenReturn(Mono.just(createdPedido));
@@ -120,17 +120,17 @@ class PedidoControllerTest {
                 .expectBody(PedidoDTO.class)
                 .value(pedido -> {
                     assert pedido.getId().equals(3L);
-                    assert pedido.getClienteId().equals("cliente-789");
+                    assert pedido.getCliente().equals("cliente-789");
                 });
     }
 
     @Test
     @WithMockUser
     void testUpdateEstado_ShouldReturnUpdatedPedido() {
-        when(pedidoService.updateEstado(eq(1L), eq("COMPLETADO"))).thenReturn(Mono.just(pedidoDTO1));
+        when(pedidoService.updateStatus(eq(1L), eq("PROCESADO"))).thenReturn(Mono.just(pedidoDTO1));
 
         webTestClient.patch()
-                .uri("/api/pedidos/1/estado?estado=COMPLETADO")
+                .uri("/api/pedidos/1/estado?estado=PROCESADO")
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody(PedidoDTO.class);
