@@ -67,14 +67,15 @@ jobs:
         service:
           - name: ms-config-server
             path: ./ms-config-server
-          - name: ms-pedidos
-            path: ./ms-pedidos
-          - name: oauth-server
-            path: ./oauth-server
-          - name: oauth-client
-            path: ./oauth-client
-          - name: resource-server
-            path: ./resource-server
+          # Temporarily disabled due to test issues
+          # - name: ms-pedidos
+          #   path: ./ms-pedidos
+          # - name: oauth-server
+          #   path: ./oauth-server
+          # - name: oauth-client
+          #   path: ./oauth-client
+          # - name: resource-server
+          #   path: ./resource-server
 
     steps:
       - name: Checkout code

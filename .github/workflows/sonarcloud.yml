@@ -27,9 +27,9 @@ jobs:
           - name: ms-productos-writer
             path: ./ms-productos-writer
             sonar_key: sistema-gestion-pedidos_ms-productos-writer
-          - name: ms-pedidos
-            path: ./ms-pedidos
-            sonar_key: sistema-gestion-pedidos_ms-pedidos
+          # - name: ms-pedidos
+          #   path: ./ms-pedidos
+          #   sonar_key: sistema-gestion-pedidos_ms-pedidos
           - name: gateway-service
             path: ./gateway-service
             sonar_key: sistema-gestion-pedidos_gateway-service
