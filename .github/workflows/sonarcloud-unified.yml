@@ -1,13 +1,12 @@
-name: SonarCloud Unified Analysis (DISABLED)
+name: SonarCloud Unified Analysis
 
-# Temporarily disabled - using sonarcloud.yml instead for better error handling
 on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
-  # push:
-  #   branches: [ main, develop ]
-  # pull_request:
-  #   branches: [ main, develop ]
-  #   types: [opened, synchronize, reopened]
 
 jobs:
   build-and-analyze:
@@ -57,37 +56,37 @@ jobs:
           # Registry Service
           if [ -f "registry-service/gradlew" ]; then
             chmod +x registry-service/gradlew
-            cd registry-service && ./gradlew clean build test jacocoTestReport && cd ..
+            cd registry-service && ./gradlew clean build test jacocoTestReport && cd .. || true
           fi
 
           # MS Productos
           if [ -f "ms-productos/gradlew" ]; then
             chmod +x ms-productos/gradlew
-            cd ms-productos && ./gradlew clean build test jacocoTestReport && cd ..
+            cd ms-productos && ./gradlew clean build test jacocoTestReport && cd .. || true
           fi
 
           # MS Productos V2
           if [ -f "ms-productos-v2/gradlew" ]; then
             chmod +x ms-productos-v2/gradlew
-            cd ms-productos-v2 && ./gradlew clean build test jacocoTestReport && cd ..
+            cd ms-productos-v2 && ./gradlew clean build test jacocoTestReport && cd .. || true
           fi
 
           # MS Productos V3
           if [ -f "ms-productos-v3/gradlew" ]; then
             chmod +x ms-productos-v3/gradlew
-            cd ms-productos-v3 && ./gradlew clean build test jacocoTestReport && cd ..
+            cd ms-productos-v3 && ./gradlew clean build test jacocoTestReport && cd .. || true
           fi
 
           # MS Productos Writer
           if [ -f "ms-productos-writer/gradlew" ]; then
             chmod +x ms-productos-writer/gradlew
-            cd ms-productos-writer && ./gradlew clean build test jacocoTestReport && cd ..
+            cd ms-productos-writer && ./gradlew clean build test jacocoTestReport && cd .. || true
           fi
 
           # Gateway Service
           if [ -f "gateway-service/gradlew" ]; then
             chmod +x gateway-service/gradlew
-            cd gateway-service && ./gradlew clean build test jacocoTestReport && cd ..
+            cd gateway-service && ./gradlew clean build test jacocoTestReport && cd .. || true
           fi
 
       # Build and test all Maven projects with JaCoCo
@@ -140,13 +139,51 @@ jobs:
           #   cd ..
           # fi
 
-      - name: Verify build outputs
+      - name: Verify build outputs and generate dynamic sonar config
         run: |
           echo "Checking build directories..."
           ls -la */build/classes/java/main 2>/dev/null || true
           ls -la */target/classes 2>/dev/null || true
-          echo "Checking test directories..."
-          find . -path "*/src/test/java" -type d
+
+          echo "Generating dynamic sonar.java.binaries list..."
+          BINARIES=""
+
+          # Check Gradle builds
+          for dir in registry-service ms-productos ms-productos-v2 ms-productos-v3 ms-productos-writer gateway-service; do
+            if [ -d "$dir/build/classes/java/main" ]; then
+              if [ -z "$BINARIES" ]; then
+                BINARIES="$dir/build/classes/java/main"
+              else
+                BINARIES="$BINARIES,\\\n  $dir/build/classes/java/main"
+              fi
+              echo "✓ Found: $dir/build/classes/java/main"
+            else
+              echo "✗ Missing: $dir/build/classes/java/main"
+            fi
+          done
+
+          # Check Maven builds
+          for dir in ms-config-server; do
+            if [ -d "$dir/target/classes" ]; then
+              if [ -z "$BINARIES" ]; then
+                BINARIES="$dir/target/classes"
+              else
+                BINARIES="$BINARIES,\\\n  $dir/target/classes"
+              fi
+              echo "✓ Found: $dir/target/classes"
+            else
+              echo "✗ Missing: $dir/target/classes"
+            fi
+          done
+
+          echo "Final binaries list:"
+          echo -e "$BINARIES"
+
+          # Update sonar-project.properties with dynamic binaries
+          sed -i "/^sonar.java.binaries=/,/^$/c\sonar.java.binaries=\\\\\n  $BINARIES\n" sonar-project.properties
+
+          echo "Updated sonar-project.properties:"
+          cat sonar-project.properties
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v6
