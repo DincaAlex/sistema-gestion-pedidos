@@ -48,94 +48,94 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
-      # Build all Gradle projects
-      - name: Build Gradle projects
+      # Build all Gradle projects with tests and JaCoCo
+      - name: Build and Test Gradle projects
         run: |
-          echo "Building Gradle projects..."
+          echo "Building and testing Gradle projects with JaCoCo..."
 
           # Registry Service
           if [ -f "registry-service/gradlew" ]; then
             chmod +x registry-service/gradlew
-            cd registry-service && ./gradlew clean build -x test && cd ..
+            cd registry-service && ./gradlew clean build test jacocoTestReport && cd ..
           fi
 
           # MS Productos
           if [ -f "ms-productos/gradlew" ]; then
             chmod +x ms-productos/gradlew
-            cd ms-productos && ./gradlew clean build -x test && cd ..
+            cd ms-productos && ./gradlew clean build test jacocoTestReport && cd ..
           fi
 
           # MS Productos V2
           if [ -f "ms-productos-v2/gradlew" ]; then
             chmod +x ms-productos-v2/gradlew
-            cd ms-productos-v2 && ./gradlew clean build -x test && cd ..
+            cd ms-productos-v2 && ./gradlew clean build test jacocoTestReport && cd ..
           fi
 
           # MS Productos V3
           if [ -f "ms-productos-v3/gradlew" ]; then
             chmod +x ms-productos-v3/gradlew
-            cd ms-productos-v3 && ./gradlew clean build -x test && cd ..
+            cd ms-productos-v3 && ./gradlew clean build test jacocoTestReport && cd ..
           fi
 
           # MS Productos Writer
           if [ -f "ms-productos-writer/gradlew" ]; then
             chmod +x ms-productos-writer/gradlew
-            cd ms-productos-writer && ./gradlew clean build -x test && cd ..
+            cd ms-productos-writer && ./gradlew clean build test jacocoTestReport && cd ..
           fi
 
           # Gateway Service
           if [ -f "gateway-service/gradlew" ]; then
             chmod +x gateway-service/gradlew
-            cd gateway-service && ./gradlew clean build -x test && cd ..
+            cd gateway-service && ./gradlew clean build test jacocoTestReport && cd ..
           fi
 
-      # Build all Maven projects
-      - name: Build Maven projects
+      # Build and test all Maven projects with JaCoCo
+      - name: Build and Test Maven projects
         run: |
-          echo "Building Maven projects..."
+          echo "Building and testing Maven projects with JaCoCo..."
 
           # MS Config Server
           if [ -f "ms-config-server/pom.xml" ]; then
-            echo "Building ms-config-server..."
+            echo "Building and testing ms-config-server..."
             cd ms-config-server
             chmod +x mvnw
-            ./mvnw clean compile -DskipTests
+            ./mvnw clean test jacoco:report
             cd ..
           fi
 
           # OAuth Server
           if [ -f "oauth-server/pom.xml" ]; then
-            echo "Building oauth-server..."
+            echo "Building and testing oauth-server..."
             cd oauth-server
             chmod +x mvnw
-            ./mvnw clean compile -DskipTests
+            ./mvnw clean test jacoco:report
             cd ..
           fi
 
           # OAuth Client
           if [ -f "oauth-client/pom.xml" ]; then
-            echo "Building oauth-client..."
+            echo "Building and testing oauth-client..."
             cd oauth-client
             chmod +x mvnw
-            ./mvnw clean compile -DskipTests
+            ./mvnw clean test jacoco:report
             cd ..
           fi
 
           # Resource Server
           if [ -f "resource-server/pom.xml" ]; then
-            echo "Building resource-server..."
+            echo "Building and testing resource-server..."
             cd resource-server
             chmod +x mvnw
-            ./mvnw clean compile -DskipTests
+            ./mvnw clean test jacoco:report
             cd ..
           fi
 
           # MS Pedidos
           if [ -f "ms-pedidos/pom.xml" ]; then
-            echo "Building ms-pedidos..."
+            echo "Building and testing ms-pedidos..."
             cd ms-pedidos
             chmod +x mvnw
-            ./mvnw clean compile -DskipTests
+            ./mvnw clean test jacoco:report
             cd ..
           fi
 

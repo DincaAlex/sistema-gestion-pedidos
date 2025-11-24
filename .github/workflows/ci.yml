@@ -45,8 +45,8 @@ jobs:
         run: ./gradlew build -x test
         working-directory: ${{ matrix.service.path }}
 
-      - name: Run tests
-        run: ./gradlew test
+      - name: Run tests with JaCoCo
+        run: ./gradlew test jacocoTestReport
         working-directory: ${{ matrix.service.path }}
         continue-on-error: true
 
@@ -95,8 +95,8 @@ jobs:
         run: ./mvnw clean package -DskipTests
         working-directory: ${{ matrix.service.path }}
 
-      - name: Run tests
-        run: ./mvnw test
+      - name: Run tests with JaCoCo
+        run: ./mvnw test jacoco:report
         working-directory: ${{ matrix.service.path }}
         continue-on-error: true
 
