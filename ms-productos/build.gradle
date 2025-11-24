@@ -90,6 +90,19 @@ jacocoTestReport {
 		html.required = true
 		csv.required = false
 	}
+
+	// Exclude DTOs, Entities, Exceptions and Application class from coverage report
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
+				'**/dto/**',
+				'**/entity/**',
+				'**/exception/*Exception.class',
+				'**/exception/ErrorResponse.class',
+				'**/*Application.class'
+			])
+		}))
+	}
 }
 
 sonar {
